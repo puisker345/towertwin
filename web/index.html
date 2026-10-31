@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TowerTwin · Digital Twin &amp; Formal Verification Loop</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="/style.css?v=7" />
+  <link rel="stylesheet" href="/style.css?v=8" />
   <!-- Three.js from cdnjs.cloudflare.com per SPEC Section 10.4 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -49,12 +49,12 @@
         </div>
 
         <div class="metric-box" title="Realized + unrealized mark-to-market profit/loss (Check C1 & C6)">
-          <span class="metric-label">MARK-TO-MARKET PnL</span>
+          <span class="metric-label">MTM PnL</span>
           <span id="metric-pnl" class="metric-value positive">+$0.00</span>
         </div>
 
         <div class="metric-box" title="Current drawdown vs running peak-to-trough Max Drawdown (Check C4 limit: $250.00)">
-          <span class="metric-label">DRAWDOWN (CURR / MAX)</span>
+          <span class="metric-label">DRAWDOWN (NOW / MAX)</span>
           <span id="metric-dd" class="metric-value">$0.00 / $0.00</span>
         </div>
 
@@ -111,7 +111,7 @@
         <div class="sparklines-cluster">
           <div class="spark-card" title="Rolling 100-tick mark-to-market PnL trajectory">
             <div class="spark-header">
-              <span class="spark-title">LIVE PnL ($)</span>
+              <span class="spark-title">PnL</span>
               <span id="spark-pnl-val" class="spark-val">+$0.00</span>
             </div>
             <canvas id="spark-pnl-canvas" width="210" height="50"></canvas>
