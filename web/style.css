@@ -780,8 +780,10 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
   height: 100%;
 }
 

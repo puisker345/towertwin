@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TowerTwin · Digital Twin &amp; Formal Verification Loop</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="/static/style.css?v=6" />
+  <link rel="stylesheet" href="/style.css?v=7" />
   <!-- Three.js from cdnjs.cloudflare.com per SPEC Section 10.4 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -203,7 +203,7 @@
         <!-- 5x5 Parameter Sweep Heatmap Card -->
         <div class="card heatmap-cluster">
           <div class="heatmap-info">
-            <div class="panel-title">5×5 PARAMETER SWEEP</div>
+            <div class="panel-title">5×5 SWEEP</div>
             <div id="heatmap-axes-label" class="heatmap-axes-label">
               X: <code>half_spread_ticks</code><br />
               Y: <code>skew_per_lot</code>
@@ -216,7 +216,7 @@
             </div>
           </div>
           <div class="heatmap-canvas-wrap">
-            <canvas id="heatmap-canvas" width="76" height="76" title="5×5 Parameter Sweep (half_spread_ticks × skew_per_lot)"></canvas>
+            <canvas id="heatmap-canvas" width="68" height="68" title="5×5 Parameter Sweep (half_spread_ticks × skew_per_lot)"></canvas>
           </div>
         </div>
       </div>
@@ -262,10 +262,6 @@
         value="100"
         class="limit-slider"
       />
-      <div class="preset-chips">
-        <button type="button" class="chip-btn chip-breach" data-limit="60" title="Set limit to 60 lots">60 lots</button>
-        <button type="button" class="chip-btn" data-limit="100" title="Set limit to 100 lots">100</button>
-      </div>
     </div>
 
     <div class="strip-group strip-loop" id="step-pod-2">
@@ -335,6 +331,6 @@
     </div>
   </div>
 
-  <script type="module" src="/static/app.js?v=6"></script>
+  <script type="module" src="/app.js?v=7"></script>
 </body>
 </html>
