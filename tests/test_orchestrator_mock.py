@@ -16,7 +16,13 @@ _PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_holdout_isolation_source_grep_and_prompt_isolation():
-    """Assert `holdout_seeds` is referenced ONLY in `config.py` and `agent/final_verify.py` (excluding tests)."""
+    """Assert `holdout_seeds` is referenced ONLY in `config.py` and `agent/final_verify.py` (excluding tests),
+    and that loop prompts never contain holdout results or holdout seed numbers.
+    """
+    from towertwin.agent.prompts import build_refine_prompt, build_repair_prompt
+    from towertwin.checks.checks import evaluate_checks
+    from towertwin.tests.test_checks import _make_clean_result
+
     target_token = "holdout" + "_seeds"
     referencing_files: set[str] = set()
 
@@ -31,6 +37,34 @@ def test_holdout_isolation_source_grep_and_prompt_isolation():
     assert referencing_files == {"config.py", "agent/final_verify.py"}, (
         f"Holdout isolation violated! Found `{target_token}` in: {sorted(referencing_files)}"
     )
+
+    # Verify CheckReport.for_prompt() and prompt builders never expose holdout seeds or holdout results
+    in_sample = [_make_clean_result(seed=s, pnl=450) for s in config.in_sample_seeds]
+    oos = [_make_clean_result(seed=s, pnl=320) for s in config.oos_seeds]
+    report = evaluate_checks(in_sample, oos, code="class Strategy: pass", params={"a": 1})
+    pf = report.for_prompt()
+
+    repair_prompt = build_repair_prompt(
+        current_code="class Strategy: pass",
+        failed_checks=pf["failed_checks"],
+        passed_checks=pf["passed_checks"],
+        metrics=pf["metrics"],
+        limits=config.get_tightened_desk_limits(),
+    )
+    refine_prompt = build_refine_prompt(
+        failed_checks=pf["failed_checks"],
+        passed_checks=pf["passed_checks"],
+        metrics=pf["metrics"],
+        validation_pass_fail=pf["validation_pass_fail"],
+    )
+
+    for unseen_seed in (201, 202, 203, 204, 205):
+        assert f"seed {unseen_seed}" not in repair_prompt
+        assert f"seed {unseen_seed}" not in refine_prompt
+    # Validation pass/fail in REFINE_PROMPT must only contain pass/fail summary, not per-seed validation PnL
+    assert pf["validation_pass_fail"] in ("PASS", "FAIL")
+    for oos_seed in (101, 102, 103):
+        assert f"Seed {oos_seed}" not in refine_prompt
 
 
 @pytest.mark.anyio
@@ -64,9 +98,9 @@ async def test_mock_repair_mode_e2e_event_sequence(monkeypatch):
     c2_0 = next(c for c in checks0_evt["checks"] if c["id"] == "C2")
     assert not c2_0["passed"]
 
-    # Verify loop prompt inputs on checks(0) never contain unseen seed numbers (301..305)
+    # Verify loop prompt inputs on checks(0) never contain unseen holdout seed numbers (201..205)
     prompt_fields = checks0_evt["report"]
-    for unseen_seed in (301, 302, 303, 304, 305):
+    for unseen_seed in (201, 202, 203, 204, 205):
         assert unseen_seed not in [m["seed"] for m in prompt_fields["seed_metrics"]]
 
     # 2. loop_stage -> iteration_proposed(1) -> checks(1) all passed -> loop_passed

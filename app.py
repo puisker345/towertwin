@@ -92,8 +92,6 @@ async def start_run(req: RunRequest) -> JSONResponse:
     if req.position_limit is not None:
         pos_lim = max(40, min(100, int(req.position_limit)))
         active_limits["position_limit"] = pos_lim
-        if (req.limits is None or "max_drawdown" not in req.limits) and pos_lim <= 80:
-            active_limits["max_drawdown"] = 15_000
 
     live_engine.set_desk_limits(active_limits)
     live_engine.set_pending_artifact(None)

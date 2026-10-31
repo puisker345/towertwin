@@ -6,7 +6,7 @@ PARAMS = {
     "half_spread_ticks": 4,
     "skew_per_lot": 0.16,
     "base_size": 6,
-    "max_inventory": 88,
+    "max_inventory": 90,
     "jump_halt_cents": 9,
     "vol_halt_cents": 4.2,
 }
@@ -16,7 +16,7 @@ SWEEP_PARAMS = ("half_spread_ticks", "skew_per_lot")
 class Strategy:
     """Current desk strategy: inventory skew + volatility/drift circuit breaker.
 
-    Uses its OWN fixed inventory cap PARAMS["max_inventory"] = 88 rather than
+    Uses its OWN fixed inventory cap PARAMS["max_inventory"] = 90 rather than
     deriving the cap from limits["position_limit"]. Passes C1-C7 at limit 100,
     but breaches C2 when desk position_limit is tightened to 40-80.
     """
@@ -90,8 +90,8 @@ class Strategy:
         base_size = max(1, int(round(self.params.get("base_size", 6))))
         max_order = int(self.limits.get("max_order_size", 10))
 
-        # Fixed desk cap of 88 lots (does NOT read limits["position_limit"])
-        max_inv = int(self.params.get("max_inventory", 88))
+        # Fixed desk cap of 90 lots (does NOT read limits["position_limit"])
+        max_inv = int(self.params.get("max_inventory", 90))
 
         # Early-session liquidity accumulation toward working band (~84-88 lots)
         # before unwinding back toward flat well prior to mid-session

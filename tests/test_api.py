@@ -91,3 +91,59 @@ async def test_api_approval_gate_and_kill_switch(monkeypatch):
         assert reset_resp.status_code == 200
         assert live_engine.killed is False
         await live_engine.stop()
+
+
+@pytest.mark.anyio
+async def test_api_approved_equals_verified_fallback(monkeypatch):
+    """Section 11.2: if REVIEW returns params that fail holdout verification,
+    the system falls back to the loop params, re-verifies, and the approved hash
+    corresponds to the fallback — never the failed candidate.
+    """
+    from towertwin.agent.gemini_client import gemini_client
+
+    monkeypatch.setenv("MOCK_LLM", "1")
+    monkeypatch.setenv("TOWERTWIN_DELAY_SCALE", "0.02")
+
+    bad_review_params = {
+        "half_spread_ticks": 1,
+        "order_size": 10,
+        "skew_per_lot": 0.0,
+        "soft_cap_ratio": 2.0,
+        "drop_trigger_cents": 999,
+        "vol_trigger_cents": 999.0,
+    }
+    gemini_client.test_review_params_override = bad_review_params
+    try:
+        await live_engine.initialize_startup_bot()
+        live_engine.set_pending_artifact(None)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            run_resp = await client.post(
+                "/api/run",
+                json={"position_limit": 60, "mode": "repair", "wait": True},
+            )
+            assert run_resp.status_code == 200
+            run_data = run_resp.json()
+            assert run_data["passed"] is True
+            verified_hash = run_data["artifact_hash"]
+
+            pending = live_engine.pending_artifact
+            assert pending is not None
+            assert pending.used_fallback_params is True
+
+            failed_hash = compute_artifact_hash(pending.code, bad_review_params, pending.limits)
+            assert verified_hash != failed_hash
+
+            # Approving with the failed candidate's hash must be rejected (409)
+            bad_approve = await client.post("/api/approve", json={"artifact_hash": failed_hash})
+            assert bad_approve.status_code == 409
+
+            # Approving with the fallback's verified hash succeeds (200) and loads fallback params
+            ok_approve = await client.post("/api/approve", json={"artifact_hash": verified_hash})
+            assert ok_approve.status_code == 200
+            assert live_engine.loaded_params == pending.params
+            assert compute_artifact_hash(live_engine.loaded_code, live_engine.loaded_params, live_engine.limits) == verified_hash
+        await live_engine.stop()
+    finally:
+        gemini_client.test_review_params_override = None

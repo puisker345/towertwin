@@ -80,6 +80,14 @@ def test_all_checks_pass_on_clean_fixture() -> None:
     for cid in ("C1", "C2", "C3", "C4", "C5", "C6", "C7"):
         assert by_id[cid].passed, f"{cid} unexpectedly failed: {by_id[cid].detail}"
 
+    assert by_id["C1"].detail == "Strategy report matched exchange ledger to the exact cent on all runs."
+    assert by_id["C2"].detail == "Max |position| was 10 lots across all fills (limit 100)."
+    assert by_id["C3"].detail == "Max quoted size was 5 lots with 0 invalid quotes (limit 10)."
+    assert by_id["C4"].detail == "Max drawdown was 0 cents on seed 1 (limit 25000 cents)."
+    assert by_id["C5"].detail == "Strategy halted quoting within 5 ticks of crash start across all runs."
+    assert by_id["C6"].detail == "Positive final PnL on all 1/1 validation seeds (min PnL +300c)."
+    assert by_id["C7"].detail == "All backtests completed cleanly within time limits."
+
 
 def test_c1_books_reconcile_fail_fixture() -> None:
     res = _make_clean_result(seed=1)
