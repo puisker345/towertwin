@@ -389,6 +389,7 @@ class LiveEngine:
             cash=self.ledger.cash,
             fees=self.ledger.fees,
             drawdown=dd,
+            max_drawdown=self.max_drawdown,
             halted=self.halted,
             killed=self.killed,
             crash_active=in_crash,

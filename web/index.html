@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TowerTwin · Digital Twin &amp; Formal Verification Loop</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/style.css?v=2" />
   <!-- Three.js from cdnjs.cloudflare.com per SPEC Section 10.4 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -50,8 +50,8 @@
           <span id="metric-pnl" class="metric-value">+$0.00</span>
         </div>
         <div class="metric-box">
-          <span class="metric-label">MAX DRAWDOWN</span>
-          <span id="metric-dd" class="metric-value">$0.00</span>
+          <span class="metric-label">DRAWDOWN (CURR / MAX)</span>
+          <span id="metric-dd" class="metric-value">$0.00 / $0.00</span>
         </div>
         <div class="metric-box">
           <span class="metric-label">REALIZED VOL</span>
@@ -316,6 +316,6 @@
     </div>
   </div>
 
-  <script type="module" src="/static/app.js"></script>
+  <script type="module" src="/static/app.js?v=2"></script>
 </body>
 </html>

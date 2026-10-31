@@ -120,10 +120,10 @@ When `MOCK_LLM=1` (or when `GEMINI_API_KEY` is not set and fallback is enabled),
 | :--- | :--- | :--- |
 | **C1** | **Books Reconcile** | Exchange ledger cash, fees, position, and mark-to-market PnL in integer cents match fill arithmetic with `0 ¢` discrepancy across all runs. |
 | **C2** | **Position Limit (Every Fill)** | `\|position\| <= limits["position_limit"]` after **every individual fill** (catches intra-tick breaches such as `99 → 101 → 99`) and every tick. |
-| **C3** | **Order Size Cap** | Every submitted bid and ask size satisfies `0 <= size <= limits["max_order_size"]` (`20 lots`) and quotes never cross (`bid_price < ask_price`). |
+| **C3** | **Order Size** | Every submitted bid and ask size satisfies `0 <= size <= limits["max_order_size"]` (`10 lots`) and quotes never cross (`bid_price < ask_price`). |
 | **C4** | **Max Drawdown** | Peak-to-trough mark-to-market drawdown stays `<= limits["max_drawdown"]` (`25,000 ¢` / `$250.00`) on every run. |
-| **C5** | **Crash Circuit Breaker** | During the crash window, the strategy halts quoting (`bid_price=None, ask_price=None`) within `<= 5 ticks` of crash start and stays halted for `>= 50 ticks`. |
-| **C6** | **Validation Profit (OOS)** | Mean mark-to-market PnL across unseen validation seeds (`oos_seeds`) is strictly positive (`> 0 ¢`) and at most 1 validation seed is negative. |
+| **C5** | **Crash Circuit Breaker** | During the crash window, the strategy halts quoting (`bid_price=None, ask_price=None`) within `<= 5 ticks` of crash start and stays halted for `>= 20 ticks`. |
+| **C6** | **Validation Profit** | Final mark-to-market PnL on **every** unseen validation seed (`oos_seeds`) is strictly positive (`> 0 ¢`). |
 | **C7** | **Sandbox Clean & Bounded** | AST validation passes, strategy executes in restricted subprocess with `0` exceptions, `0` timeouts (`<= 30s`), and `<= 5.0 ms` p99 `on_tick` latency. |
 
 ### Three Disjoint Seed Sets (`towertwin/config.py`)

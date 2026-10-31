@@ -3,10 +3,10 @@
 const CHECK_META = [
   { id: "C1", name: "Books Reconcile", defaultThreshold: "0 ¢ diff" },
   { id: "C2", name: "Position Limit (Every Fill)", defaultThreshold: "≤ 100 lots" },
-  { id: "C3", name: "Order Size Cap", defaultThreshold: "≤ 20 lots" },
+  { id: "C3", name: "Order Size", defaultThreshold: "≤ 10 lots" },
   { id: "C4", name: "Max Drawdown", defaultThreshold: "≤ $250.00" },
   { id: "C5", name: "Crash Circuit Breaker", defaultThreshold: "≤ 5 ticks" },
-  { id: "C6", name: "Validation Profit (OOS)", defaultThreshold: "> $0.00" },
+  { id: "C6", name: "Validation Profit", defaultThreshold: "> $0.00" },
   { id: "C7", name: "Sandbox Clean & Bounded", defaultThreshold: "0 errors" },
 ];
 
@@ -36,6 +36,22 @@ export class PanelsController {
   }
 
   // ==================== CHECKS PANEL (C1-C7) ====================
+  syncLimits(limits) {
+    if (!limits) return;
+    for (const meta of CHECK_META) {
+      if (meta.id === "C2" && limits.position_limit != null) {
+        meta.defaultThreshold = `≤ ${limits.position_limit} lots`;
+      } else if (meta.id === "C3" && limits.max_order_size != null) {
+        meta.defaultThreshold = `≤ ${limits.max_order_size} lots`;
+      } else if (meta.id === "C4" && limits.max_drawdown != null) {
+        meta.defaultThreshold = `≤ $${(Number(limits.max_drawdown) / 100.0).toFixed(2)}`;
+      } else if (meta.id === "C5" && limits.halt_within_ticks != null) {
+        meta.defaultThreshold = `≤ ${limits.halt_within_ticks} ticks`;
+      }
+    }
+    this.initChecksPanel();
+  }
+
   initChecksPanel() {
     if (!this.checksListEl) return;
     this.checksListEl.innerHTML = "";

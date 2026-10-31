@@ -1,8 +1,8 @@
 // Main Frontend Controller (ES Module) for TowerTwin (Section 10.4)
 
-import { audioEngine } from "./audio.js";
-import { PanelsController } from "./panels.js";
-import { TwinVisualizer } from "./twin3d.js";
+import { audioEngine } from "./audio.js?v=2";
+import { PanelsController } from "./panels.js?v=2";
+import { TwinVisualizer } from "./twin3d.js?v=2";
 
 const panels = new PanelsController();
 const twin = new TwinVisualizer(
@@ -15,6 +15,7 @@ let selectedMode = "repair";
 let hasVoiceSample = false;
 let pendingSignoff = null; // Stores the latest signoff_ready event payload
 let activeSliderLimit = 100;
+let liveMaxDrawdownCents = 0;
 
 // DOM references
 const mockBadgeEl = document.getElementById("mock-badge");
@@ -73,6 +74,7 @@ async function initConfig() {
       if (loopSummaryStatusEl) {
         loopSummaryStatusEl.innerHTML = `Desk rule: max inventory <strong>${activeSliderLimit} lots</strong>`;
       }
+      panels.syncLimits(cfg.desk_limits);
     }
     if (cfg.artifact_id && activeArtifactIdEl) {
       activeArtifactIdEl.textContent = cfg.artifact_id;
@@ -214,6 +216,8 @@ function handleEvent(evt) {
 
     case "approved": {
       pendingSignoff = null;
+      liveMaxDrawdownCents = 0;
+      if (metricDdEl) metricDdEl.textContent = "$0.00 / $0.00";
       panels.hideSignoffModal();
       if (btnOpenApprove) btnOpenApprove.disabled = true;
       if (btnRun) btnRun.disabled = false;
@@ -285,8 +289,12 @@ function onTickEvent(evt) {
     metricPnlEl.className = `metric-value ${pnlDollars >= 0 ? "positive" : "negative"}`;
   }
 
-  const ddDollars = (Number(evt.drawdown || 0) / 100.0).toFixed(2);
-  if (metricDdEl) metricDdEl.textContent = `$${ddDollars}`;
+  const currDdCents = Math.max(0, Number(evt.drawdown || 0));
+  const serverMaxDdCents = Math.max(0, Number(evt.max_drawdown || 0));
+  liveMaxDrawdownCents = Math.max(liveMaxDrawdownCents, currDdCents, serverMaxDdCents);
+  const ddDollars = (currDdCents / 100.0).toFixed(2);
+  const maxDdDollars = (liveMaxDrawdownCents / 100.0).toFixed(2);
+  if (metricDdEl) metricDdEl.textContent = `$${ddDollars} / $${maxDdDollars}`;
   if (metricVolEl) metricVolEl.textContent = Number(evt.volatility || 0).toFixed(2);
 
   // Bot status pill in topbar
@@ -445,6 +453,8 @@ if (btnReset) {
     const res = await fetch("/api/reset", { method: "POST" });
     if (res.ok) {
       const data = await res.json();
+      liveMaxDrawdownCents = 0;
+      if (metricDdEl) metricDdEl.textContent = "$0.00 / $0.00";
       activeSliderLimit = (data.limits && Number(data.limits.position_limit)) || 100;
       if (sliderEl) sliderEl.value = String(activeSliderLimit);
       if (limitValueEl) limitValueEl.textContent = `${activeSliderLimit} lots`;
@@ -455,7 +465,7 @@ if (btnReset) {
       if (haltedBannerEl) haltedBannerEl.classList.add("hidden");
       if (crashBannerEl) crashBannerEl.classList.add("hidden");
       if (stageLabelEl) stageLabelEl.textContent = "Live Digital Twin · Reset to Desk Strategy";
-      panels.initChecksPanel();
+      panels.syncLimits(data.limits);
       panels.resetTimeline();
       panels.resetRedteam();
       panels.clearHeatmap();
