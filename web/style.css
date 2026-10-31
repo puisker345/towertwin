@@ -210,107 +210,49 @@ html, body {
 /* ==================== TELEMETRY BAR (KEY NUMBERS >= 18px) ==================== */
 .telemetry-bar {
   display: grid;
-  grid-template-columns: 0.85fr 1.25fr 1.05fr 1.3fr 0.85fr auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
   align-items: center;
   background: linear-gradient(180deg, #0f1728 0%, #0b111d 100%);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: 6px 12px;
-  gap: 10px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .metric-box {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding-right: 8px;
+  gap: 2px;
+  padding-right: 6px;
   border-right: 1px solid rgba(44, 66, 104, 0.35);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .metric-box:last-of-type {
   border-right: none;
 }
 
-.metric-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
 .metric-label {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .metric-value {
   font-family: var(--font-mono);
-  font-size: 19px; /* >= 18px per SPEC Section 10.4 */
+  font-size: 18px; /* >= 18px per SPEC Section 10.4 */
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1.15;
   white-space: nowrap;
-}
-
-.metric-sub {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  white-space: nowrap;
-}
-
-.metric-sub-cap {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
-}
-
-.metric-mini-badge {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-}
-
-.metric-mini-badge.safe {
-  background: rgba(16, 185, 129, 0.18);
-  color: #34d399;
-}
-
-.metric-mini-badge.warn {
-  background: rgba(245, 158, 11, 0.22);
-  color: #fbbf24;
-}
-
-.metric-mini-badge.breach {
-  background: rgba(239, 68, 68, 0.28);
-  color: #f87171;
-}
-
-.metric-gauge-track {
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
   overflow: hidden;
-  margin-top: 2px;
-}
-
-.metric-gauge-fill {
-  height: 100%;
-  background: var(--accent-cyan);
-  border-radius: 999px;
-  transition: width 0.2s ease, background-color 0.2s ease;
-}
-
-.metric-gauge-fill.gauge-dd {
-  background: var(--accent-amber);
+  text-overflow: ellipsis;
 }
 
 .metric-box.breach .metric-value {
@@ -668,29 +610,32 @@ html, body {
   background: linear-gradient(180deg, #0e1626 0%, #0b111d 100%);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 /* Top Split: Loop Ring + 5x5 Sweep Heatmap */
 .right-top-split {
   display: grid;
-  grid-template-columns: 1.38fr 1fr;
+  grid-template-columns: 1.25fr 1fr;
   gap: 8px;
-  height: 132px;
-  min-height: 132px;
+  height: 112px;
+  min-height: 112px;
+  flex-shrink: 0;
 }
 
 .loop-ring-card {
   height: 100%;
-  padding: 6px 10px;
+  padding: 5px 8px;
 }
 
 .loop-ring-layout {
   display: grid;
-  grid-template-columns: 142px 1fr;
+  grid-template-columns: 112px 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   height: 100%;
 }
 
@@ -702,8 +647,8 @@ html, body {
 }
 
 .loop-ring-svg {
-  width: 142px;
-  height: 118px;
+  width: 112px;
+  height: 98px;
   overflow: visible;
 }
 
@@ -985,11 +930,16 @@ html, body {
 }
 
 .check-detail-sub {
+  display: none;
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.check-row.status-fail .check-detail-sub {
+  display: inline;
 }
 
 .check-metrics {
@@ -1031,11 +981,12 @@ html, body {
 /* ==================== ITERATION TIMELINE ==================== */
 .timeline-card {
   flex: 1;
-  min-height: 110px;
+  min-height: 70px;
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 7px 10px;
+  padding: 6px 10px;
+  flex-shrink: 1;
 }
 
 .timeline-list {
@@ -1154,80 +1105,38 @@ html, body {
   display: block;
 }
 
-/* ==================== BOTTOM COMMAND DOCK (3-STEP WORKFLOW) ==================== */
+/* ==================== BOTTOM CONTROL STRIP ==================== */
 .bottom-strip {
-  height: 78px;
-  min-height: 78px;
+  height: 54px;
+  min-height: 54px;
   background: linear-gradient(180deg, #0d1524 0%, #080d17 100%);
   border-top: 1px solid var(--border-bright);
-  padding: 6px 12px;
-  display: grid;
-  grid-template-columns: 1.25fr 1.05fr 1fr 1.45fr;
-  align-items: stretch;
-  gap: 8px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.5);
   z-index: 20;
+  flex-shrink: 0;
 }
 
-.workflow-pod {
-  background: rgba(16, 24, 39, 0.85);
-  border: 1px solid var(--border-subtle);
-  border-radius: 7px;
-  padding: 5px 10px;
+.strip-group {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
-.workflow-pod.active-step {
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.16), inset 0 1px 0 rgba(34, 211, 238, 0.2);
-}
-
-.workflow-pod.ready-approve {
-  border-color: var(--accent-green);
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.28);
-}
-
-.pod-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.step-badge {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(56, 189, 248, 0.18);
-  color: var(--accent-cyan);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.step-badge.badge-live {
-  background: rgba(245, 158, 11, 0.16);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.4);
-}
-
-.pod-title {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  white-space: nowrap;
+.strip-limit {
+  flex: 1;
+  max-width: 420px;
 }
 
 .preset-chips {
-  margin-left: auto;
   display: inline-flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .chip-btn {
@@ -1235,12 +1144,12 @@ html, body {
   border: 1px solid var(--border-bright);
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 3px 7px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .chip-btn:hover {
@@ -1249,19 +1158,8 @@ html, body {
 }
 
 .chip-btn.chip-breach {
-  border-color: rgba(245, 158, 11, 0.6);
+  border-color: rgba(245, 158, 11, 0.65);
   color: #fde68a;
-}
-
-.chip-btn.chip-breach:hover {
-  background: rgba(245, 158, 11, 0.25);
-}
-
-.slider-group {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
 }
 
 .control-label {
@@ -1279,16 +1177,9 @@ html, body {
 }
 
 .limit-slider {
-  flex: 1;
+  width: 110px;
   accent-color: var(--accent-cyan);
   cursor: pointer;
-  min-width: 80px;
-}
-
-.pod-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .mode-group {
@@ -1585,86 +1476,64 @@ html, body {
   background: #34d399;
 }
 
-/* Responsive adjustments for 1366x768 and compact 16:9 screens */
+/* Responsive adjustments for 1366x768 and scaled laptop screens (1100px-1560px) */
 @media (max-width: 1560px) {
   .workspace {
-    grid-template-columns: 55% 45%;
+    grid-template-columns: 54% 46%;
     gap: 8px;
     padding: 6px 10px;
   }
   .telemetry-bar {
-    grid-template-columns: 0.8fr 1.15fr 0.98fr 1.32fr 0.78fr auto;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
     gap: 6px;
     padding: 5px 8px;
   }
   .metric-box {
-    padding-right: 5px;
+    padding-right: 4px;
     min-width: 0;
   }
   .metric-label {
-    font-size: 9px;
-    letter-spacing: 0.03em;
+    font-size: 8.5px;
+    letter-spacing: 0.02em;
   }
   .metric-value {
     font-size: 18px;
-  }
-  .metric-sub-cap {
-    display: none;
   }
   #btn-view-mode {
     padding: 4px 7px;
     font-size: 11px;
   }
-  .twin-hud-axis {
-    display: none;
-  }
   .spark-title {
-    font-size: 9px;
+    font-size: 8.5px;
   }
   .spark-val {
-    font-size: 11.5px;
-  }
-  .right-top-split {
-    grid-template-columns: 1.32fr 1fr;
-    gap: 6px;
-  }
-  .loop-ring-layout {
-    grid-template-columns: 116px 1fr;
-    gap: 6px;
-  }
-  .loop-ring-svg {
-    width: 116px;
-    height: 108px;
-  }
-  .loop-summary-status {
-    font-size: 12px;
-    white-space: normal;
-    line-height: 1.2;
-  }
-  .loop-verify-summary {
-    font-size: 10px;
-  }
-  .bottom-strip {
-    grid-template-columns: 1.12fr 0.92fr 0.86fr 1.6fr;
-    gap: 6px;
-    padding: 5px 8px;
-  }
-  .workflow-pod {
-    padding: 4px 8px;
-  }
-  .pod-title {
-    font-size: 9.5px;
-  }
-  .action-buttons {
-    gap: 4px;
-  }
-  .action-buttons .btn {
-    padding: 5px 7px;
     font-size: 11px;
   }
-  .pod-controls .btn {
-    padding: 5px 8px;
+  .right-top-split {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 6px;
+    height: 106px;
+    min-height: 106px;
+  }
+  .loop-ring-layout {
+    grid-template-columns: 100px 1fr;
+    gap: 5px;
+  }
+  .loop-ring-svg {
+    width: 100px;
+    height: 92px;
+  }
+  .loop-summary-status {
     font-size: 11.5px;
+    white-space: nowrap;
+  }
+  .bottom-strip {
+    gap: 8px;
+    padding: 5px 10px;
+  }
+  .bottom-strip .btn {
+    padding: 5px 8px;
+    font-size: 11px;
   }
   .mode-btn {
     padding: 5px 7px;

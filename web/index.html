@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TowerTwin · Digital Twin &amp; Formal Verification Loop</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="/static/style.css?v=5" />
+  <link rel="stylesheet" href="/static/style.css?v=6" />
   <!-- Three.js from cdnjs.cloudflare.com per SPEC Section 10.4 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -36,46 +36,31 @@
   <main class="workspace">
     <!-- LEFT / CENTRE COLUMN: LIVE DIGITAL TWIN + SPARKLINES + RED-TEAM SCENARIOS -->
     <section class="centre-col">
-      <!-- Live Telemetry Readout Bar (minimum 18px key numbers + visual gauges) -->
+      <!-- Live Telemetry Readout Bar (minimum 18px key numbers, zero clutter) -->
       <div class="telemetry-bar">
         <div class="metric-box" title="Current simulated exchange mid-price in dollars">
           <span class="metric-label">MID PRICE</span>
           <span id="metric-mid" class="metric-value">$100.00</span>
-          <span id="metric-spread-sub" class="metric-sub">Spread: 2¢</span>
         </div>
 
-        <div class="metric-box metric-box-wide" id="metric-pos-box" title="Current net inventory (lots) vs active desk position limit (Check C2)">
-          <div class="metric-header-row">
-            <span class="metric-label">POSITION / LIMIT (C2)</span>
-            <span id="metric-pos-badge" class="metric-mini-badge safe">SAFE</span>
-          </div>
+        <div class="metric-box" id="metric-pos-box" title="Current net inventory (lots) vs active desk position limit (Check C2)">
+          <span class="metric-label">POSITION / LIMIT</span>
           <span id="metric-pos" class="metric-value">0 / 100</span>
-          <div class="metric-gauge-track">
-            <div id="metric-pos-bar" class="metric-gauge-fill" style="width: 0%"></div>
-          </div>
         </div>
 
         <div class="metric-box" title="Realized + unrealized mark-to-market profit/loss (Check C1 & C6)">
           <span class="metric-label">MARK-TO-MARKET PnL</span>
           <span id="metric-pnl" class="metric-value positive">+$0.00</span>
-          <span class="metric-sub">Zero-diff ledger (C1)</span>
         </div>
 
-        <div class="metric-box metric-box-wide" title="Current drawdown vs running peak-to-trough Max Drawdown (Check C4 limit: $250.00)">
-          <div class="metric-header-row">
-            <span class="metric-label">DRAWDOWN (CURR / MAX)</span>
-            <span class="metric-sub-cap">Cap $250</span>
-          </div>
+        <div class="metric-box" title="Current drawdown vs running peak-to-trough Max Drawdown (Check C4 limit: $250.00)">
+          <span class="metric-label">DRAWDOWN (CURR / MAX)</span>
           <span id="metric-dd" class="metric-value">$0.00 / $0.00</span>
-          <div class="metric-gauge-track">
-            <div id="metric-dd-bar" class="metric-gauge-fill gauge-dd" style="width: 0%"></div>
-          </div>
         </div>
 
-        <div class="metric-box" title="Rolling realized mid-price volatility (cents/tick) — triggers C5 circuit breaker during crash">
+        <div class="metric-box" title="Rolling realized mid-price volatility (cents/tick)">
           <span class="metric-label">REALIZED VOL</span>
           <span id="metric-vol" class="metric-value">1.80</span>
-          <span id="metric-regime-sub" class="metric-sub">Normal regime</span>
         </div>
 
         <div class="metric-actions">
@@ -90,19 +75,12 @@
         <canvas id="twin-3d-canvas" class="twin-canvas"></canvas>
         <canvas id="twin-2d-canvas" class="twin-canvas hidden"></canvas>
 
-        <!-- Top-Left Live Bot Quote HUD -->
+        <!-- Compact Top-Left Live Bot Quote HUD -->
         <div class="twin-hud-top">
           <div class="twin-hud-pill">
-            <span class="hud-title">LIVE ORDER-BOOK TWIN</span>
-            <span class="hud-sep">·</span>
             <span id="hud-tick" class="hud-mono">Tick #0</span>
             <span class="hud-sep">·</span>
-            <span id="hud-quotes" class="hud-quotes">Bot Quotes: Bid $99.98 × 8 | Ask $100.02 × 8</span>
-          </div>
-          <div class="twin-hud-axis">
-            <span class="axis-tag bid-tag">← Bids (Buy Liquidity)</span>
-            <span class="axis-tag mid-tag">Mid Spine</span>
-            <span class="axis-tag ask-tag">Asks (Sell Liquidity) →</span>
+            <span id="hud-quotes" class="hud-quotes">Quotes: Bid $99.98×8 | Ask $100.02×8</span>
           </div>
         </div>
 
@@ -150,14 +128,12 @@
         <!-- Red-Team Scenarios Strip (6 cards landing during loop) -->
         <div class="redteam-panel">
           <div class="panel-header-inline">
-            <div class="panel-title-group">
-              <span class="panel-title">ADVERSARIAL RED-TEAM STRESS (GEMINI 3.8 FLASH)</span>
-            </div>
+            <span class="panel-title">RED-TEAM STRESS SCENARIOS (FLASH)</span>
             <span id="redteam-count" class="panel-subtitle">0 / 6 generated</span>
           </div>
           <div id="redteam-grid" class="redteam-grid">
             <div class="redteam-placeholder">
-              6 adversarial flash-crash &amp; volatility regimes stream here in parallel during strategy repair...
+              6 adversarial flash-crash regimes stream here in parallel during repair...
             </div>
           </div>
         </div>
@@ -213,15 +189,12 @@
             </div>
 
             <div class="loop-ring-info">
-              <div class="panel-title">FORMAL VERIFICATION LOOP</div>
+              <div class="panel-title">VERIFICATION LOOP</div>
               <div id="loop-summary-status" class="loop-summary-status">
-                Desk rule: max inventory <strong>100 lots</strong>
+                Desk rule: <strong>100 lots</strong>
               </div>
               <div id="loop-artifact-badge" class="artifact-badge-inline" title="SHA-256 prefix of currently active strategy code + params + limits">
-                Active Artifact: <code id="active-artifact-id">init...</code>
-              </div>
-              <div id="loop-verify-summary" class="loop-verify-summary">
-                Python grades every fill across in-sample, OOS &amp; untouched holdout seeds.
+                Artifact: <code id="active-artifact-id">init...</code>
               </div>
             </div>
           </div>
@@ -239,11 +212,11 @@
             <div class="heatmap-legend">
               <span class="hm-leg"><i class="hm-swatch hm-fail"></i>Fail</span>
               <span class="hm-leg"><i class="hm-swatch hm-pass"></i>Pass</span>
-              <span class="hm-leg"><i class="hm-swatch hm-best"></i>Chosen</span>
+              <span class="hm-leg"><i class="hm-swatch hm-best"></i>Best</span>
             </div>
           </div>
           <div class="heatmap-canvas-wrap">
-            <canvas id="heatmap-canvas" width="96" height="84" title="5×5 Parameter Sweep (half_spread_ticks × skew_per_lot)"></canvas>
+            <canvas id="heatmap-canvas" width="76" height="76" title="5×5 Parameter Sweep (half_spread_ticks × skew_per_lot)"></canvas>
           </div>
         </div>
       </div>
@@ -251,10 +224,7 @@
       <!-- Middle: Deterministic Checks Panel (C1–C7) -->
       <div class="card checks-card">
         <div class="panel-header-inline">
-          <div class="panel-title-group">
-            <span class="panel-title">DETERMINISTIC PROOF CHECKS (C1–C7)</span>
-            <span class="panel-hint">Pure Python evaluator · LLM never grades itself</span>
-          </div>
+          <span class="panel-title">DETERMINISTIC PROOF CHECKS (C1–C7)</span>
           <span id="checks-pass-summary" class="checks-pass-summary">7 / 7 PASS</span>
         </div>
         <div id="checks-list" class="checks-list">
@@ -265,95 +235,53 @@
       <!-- Bottom of Right Col: Iteration Timeline -->
       <div class="card timeline-card">
         <div class="panel-header-inline">
-          <div class="panel-title-group">
-            <span class="panel-title">ITERATION TIMELINE &amp; CODE DIFFS</span>
-            <span class="panel-hint">Click any iteration to inspect code diff</span>
-          </div>
+          <span class="panel-title">ITERATION TIMELINE &amp; CODE DIFFS</span>
           <span id="timeline-count" class="panel-subtitle">0 iterations</span>
         </div>
         <div id="timeline-list" class="timeline-list">
           <div class="timeline-empty">
-            <strong>How to test:</strong> Lower <em>Desk Position Limit</em> to <strong>60 lots</strong> in Step 1 below, then click <strong>Run Repair</strong> in Step 2 to watch Iteration 0 catch the breach and Argon repair it.
+            Set <strong>Desk Position Limit</strong> to <strong>60 lots</strong> below and click <strong>Run Repair</strong> to start.
           </div>
         </div>
       </div>
     </aside>
   </main>
 
-  <!-- BOTTOM COMMAND DOCK: Guided 3-Step Workflow + Stress Controls -->
+  <!-- BOTTOM CONTROL STRIP: Clean single-row layout that never clips -->
   <footer class="bottom-strip">
-    <!-- STEP 1: Tighten Desk Risk Rule -->
-    <div id="step-pod-1" class="workflow-pod active-step">
-      <div class="pod-header">
-        <span class="step-badge">STEP 1</span>
-        <span class="pod-title">TIGHTEN DESK RISK LIMIT</span>
-        <div class="preset-chips">
-          <button type="button" class="chip-btn" data-limit="100" title="Baseline safe limit (100 lots)">100</button>
-          <button type="button" class="chip-btn chip-breach" data-limit="60" title="Tighten to 60 lots (triggers C2 breach)">60 · Breach</button>
-          <button type="button" class="chip-btn" data-limit="40" title="Strict 40 lots limit">40</button>
-        </div>
-      </div>
-      <div class="slider-group">
-        <label for="limit-slider" class="control-label">
-          MAX INVENTORY: <span id="limit-value" class="limit-readout">100 lots</span>
-        </label>
-        <input
-          type="range"
-          id="limit-slider"
-          min="40"
-          max="100"
-          step="5"
-          value="100"
-          class="limit-slider"
-        />
+    <div class="strip-group strip-limit" id="step-pod-1">
+      <label for="limit-slider" class="control-label">
+        DESK POSITION LIMIT: <span id="limit-value" class="limit-readout">100 lots</span>
+      </label>
+      <input
+        type="range"
+        id="limit-slider"
+        min="40"
+        max="100"
+        step="5"
+        value="100"
+        class="limit-slider"
+      />
+      <div class="preset-chips">
+        <button type="button" class="chip-btn chip-breach" data-limit="60" title="Set limit to 60 lots">60 lots</button>
+        <button type="button" class="chip-btn" data-limit="100" title="Set limit to 100 lots">100</button>
       </div>
     </div>
 
-    <!-- STEP 2: Run Autonomous Repair Loop -->
-    <div id="step-pod-2" class="workflow-pod">
-      <div class="pod-header">
-        <span class="step-badge">STEP 2</span>
-        <span class="pod-title">ARGON REPAIR &amp; PROOF LOOP</span>
+    <div class="strip-group strip-loop" id="step-pod-2">
+      <div class="mode-group" role="group" aria-label="Loop Mode">
+        <button id="mode-repair" class="mode-btn active" data-mode="repair">Repair</button>
+        <button id="mode-scratch" class="mode-btn" data-mode="scratch">From scratch</button>
       </div>
-      <div class="pod-controls">
-        <div class="mode-group" role="group" aria-label="Loop Mode">
-          <button id="mode-repair" class="mode-btn active" data-mode="repair" title="Repair current desk strategy">
-            Repair
-          </button>
-          <button id="mode-scratch" class="mode-btn" data-mode="scratch" title="Synthesize strategy from scratch">
-            From scratch
-          </button>
-        </div>
-        <button id="btn-run" class="btn btn-primary">⚡ Run Repair</button>
-      </div>
+      <button id="btn-run" class="btn btn-primary">⚡ Run Repair</button>
+      <button id="btn-open-approve" class="btn btn-approve" disabled>✓ Approve Sign-Off</button>
     </div>
 
-    <!-- STEP 3: Human Sign-Off Gate -->
-    <div id="step-pod-3" class="workflow-pod">
-      <div class="pod-header">
-        <span class="step-badge">STEP 3</span>
-        <span class="pod-title">HUMAN SIGN-OFF GATE</span>
-      </div>
-      <div class="pod-controls">
-        <button id="btn-open-approve" class="btn btn-approve" disabled>✓ Approve Sign-Off</button>
-        <span id="signoff-gate-hint" class="gate-hint">Locked until 7/7 holdout proof</span>
-      </div>
-    </div>
-
-    <!-- LIVE STRESS & OVERRIDE CONTROLS -->
-    <div class="workflow-pod stress-pod">
-      <div class="pod-header">
-        <span class="step-badge badge-live">LIVE TWIN</span>
-        <span class="pod-title">STRESS &amp; SAFETY OVERRIDE</span>
-      </div>
-      <div class="action-buttons">
-        <button id="btn-crash" class="btn btn-warning" title="Inject a live flash crash into the order book twin">⚡ Trigger Flash Crash</button>
-        <button id="btn-kill" class="btn btn-danger" title="Immediate human kill switch — pulls all quotes to None">🛑 Kill Switch</button>
-        <button id="btn-reset" class="btn btn-secondary" title="Reset live twin and desk strategy to 100 lots">↺ Reset</button>
-        <button id="btn-audio-mute" class="btn btn-secondary btn-audio" title="Toggle WebAudio fill sonar pings">
-          🔇 Sonar Off
-        </button>
-      </div>
+    <div class="strip-group strip-actions" id="step-pod-3">
+      <button id="btn-crash" class="btn btn-warning">⚡ Trigger Flash Crash</button>
+      <button id="btn-kill" class="btn btn-danger">🛑 Kill Switch</button>
+      <button id="btn-reset" class="btn btn-secondary">↺ Reset</button>
+      <button id="btn-audio-mute" class="btn btn-secondary btn-audio">🔇 Sonar Off</button>
     </div>
   </footer>
 
@@ -407,6 +335,6 @@
     </div>
   </div>
 
-  <script type="module" src="/static/app.js?v=4"></script>
+  <script type="module" src="/static/app.js?v=6"></script>
 </body>
 </html>

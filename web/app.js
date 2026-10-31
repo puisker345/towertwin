@@ -1,8 +1,8 @@
 // Main Frontend Controller (ES Module) for TowerTwin (Section 10.4)
 
-import { audioEngine } from "./audio.js?v=4";
-import { PanelsController } from "./panels.js?v=4";
-import { TwinVisualizer } from "./twin3d.js?v=4";
+import { audioEngine } from "./audio.js?v=6";
+import { PanelsController } from "./panels.js?v=6";
+import { TwinVisualizer } from "./twin3d.js?v=6";
 
 const panels = new PanelsController();
 const twin = new TwinVisualizer(
@@ -87,7 +87,7 @@ async function initConfig() {
       if (sliderEl) sliderEl.value = String(activeSliderLimit);
       if (limitValueEl) limitValueEl.textContent = `${activeSliderLimit} lots`;
       if (loopSummaryStatusEl) {
-        loopSummaryStatusEl.innerHTML = `Desk rule: max inventory <strong>${activeSliderLimit} lots</strong>`;
+        loopSummaryStatusEl.innerHTML = `Desk rule: <strong>${activeSliderLimit} lots</strong>`;
       }
       panels.syncLimits(cfg.desk_limits);
     }
@@ -580,7 +580,7 @@ if (btnReset) {
       if (sliderEl) sliderEl.value = String(activeSliderLimit);
       if (limitValueEl) limitValueEl.textContent = `${activeSliderLimit} lots`;
       if (loopSummaryStatusEl) {
-        loopSummaryStatusEl.innerHTML = `Desk rule: max inventory <strong>${activeSliderLimit} lots</strong>`;
+        loopSummaryStatusEl.innerHTML = `Desk rule: <strong>${activeSliderLimit} lots</strong>`;
       }
       if (killedBannerEl) killedBannerEl.classList.add("hidden");
       if (haltedBannerEl) haltedBannerEl.classList.add("hidden");
