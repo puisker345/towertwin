@@ -1,8 +1,8 @@
 // Main Frontend Controller (ES Module) for TowerTwin (Section 10.4)
 
-import { audioEngine } from "./audio.js?v=2";
-import { PanelsController } from "./panels.js?v=2";
-import { TwinVisualizer } from "./twin3d.js?v=2";
+import { audioEngine } from "./audio.js?v=3";
+import { PanelsController } from "./panels.js?v=3";
+import { TwinVisualizer } from "./twin3d.js?v=3";
 
 const panels = new PanelsController();
 const twin = new TwinVisualizer(
@@ -45,11 +45,26 @@ const btnPlayBriefing = document.getElementById("btn-play-briefing");
 
 // Telemetry DOM
 const metricMidEl = document.getElementById("metric-mid");
+const metricSpreadSubEl = document.getElementById("metric-spread-sub");
 const metricPosEl = document.getElementById("metric-pos");
 const metricPosBoxEl = document.getElementById("metric-pos-box");
+const metricPosBadgeEl = document.getElementById("metric-pos-badge");
+const metricPosBarEl = document.getElementById("metric-pos-bar");
 const metricPnlEl = document.getElementById("metric-pnl");
 const metricDdEl = document.getElementById("metric-dd");
+const metricDdBarEl = document.getElementById("metric-dd-bar");
 const metricVolEl = document.getElementById("metric-vol");
+const metricRegimeSubEl = document.getElementById("metric-regime-sub");
+
+// Twin HUD DOM
+const hudTickEl = document.getElementById("hud-tick");
+const hudQuotesEl = document.getElementById("hud-quotes");
+
+// Workflow Step Pods
+const stepPod1El = document.getElementById("step-pod-1");
+const stepPod2El = document.getElementById("step-pod-2");
+const stepPod3El = document.getElementById("step-pod-3");
+const signoffGateHintEl = document.getElementById("signoff-gate-hint");
 
 // Overlay Banners
 const haltedBannerEl = document.getElementById("twin-halted-banner");
@@ -193,6 +208,14 @@ function handleEvent(evt) {
       pendingSignoff = evt;
       if (btnRun) btnRun.disabled = false;
       if (btnOpenApprove) btnOpenApprove.disabled = false;
+      if (stepPod1El) stepPod1El.classList.remove("active-step");
+      if (stepPod2El) stepPod2El.classList.remove("active-step");
+      if (stepPod3El) {
+        stepPod3El.classList.add("active-step", "ready-approve");
+      }
+      if (signoffGateHintEl) {
+        signoffGateHintEl.textContent = `Ready · Artifact ${evt.artifact_id || ""}`;
+      }
       if (stageLabelEl) {
         stageLabelEl.textContent = `Sign-Off Ready · Artifact ${evt.artifact_id || ""}`;
       }
@@ -207,6 +230,10 @@ function handleEvent(evt) {
       pendingSignoff = null;
       if (btnRun) btnRun.disabled = false;
       if (btnOpenApprove) btnOpenApprove.disabled = true;
+      if (stepPod3El) stepPod3El.classList.remove("active-step", "ready-approve");
+      if (signoffGateHintEl) {
+        signoffGateHintEl.textContent = "Blocked · Holdout check failed";
+      }
       if (stageLabelEl) {
         stageLabelEl.textContent = "Sign-Off Blocked · Holdout Verification Failed";
       }
@@ -218,6 +245,12 @@ function handleEvent(evt) {
       pendingSignoff = null;
       liveMaxDrawdownCents = 0;
       if (metricDdEl) metricDdEl.textContent = "$0.00 / $0.00";
+      if (metricDdBarEl) metricDdBarEl.style.width = "0%";
+      if (stepPod3El) stepPod3El.classList.remove("active-step", "ready-approve");
+      if (stepPod1El) stepPod1El.classList.add("active-step");
+      if (signoffGateHintEl) {
+        signoffGateHintEl.textContent = `Live · Artifact ${evt.artifact_id || ""}`;
+      }
       panels.hideSignoffModal();
       if (btnOpenApprove) btnOpenApprove.disabled = true;
       if (btnRun) btnRun.disabled = false;
@@ -281,6 +314,27 @@ function onTickEvent(evt) {
   if (metricPosBoxEl) {
     metricPosBoxEl.classList.toggle("breach", breached);
   }
+  const utilPct = Math.min(100, (Math.abs(pos) / Math.max(1, effectiveLimit)) * 100);
+  if (metricPosBarEl) {
+    metricPosBarEl.style.width = `${utilPct.toFixed(1)}%`;
+    metricPosBarEl.style.backgroundColor = breached
+      ? "#ef4444"
+      : utilPct >= 75
+      ? "#f59e0b"
+      : "#22d3ee";
+  }
+  if (metricPosBadgeEl) {
+    if (breached) {
+      metricPosBadgeEl.className = "metric-mini-badge breach";
+      metricPosBadgeEl.textContent = "BREACH";
+    } else if (utilPct >= 75) {
+      metricPosBadgeEl.className = "metric-mini-badge warn";
+      metricPosBadgeEl.textContent = "NEAR CAP";
+    } else {
+      metricPosBadgeEl.className = "metric-mini-badge safe";
+      metricPosBadgeEl.textContent = "SAFE";
+    }
+  }
 
   const pnlDollars = Number(evt.pnl || 0) / 100.0;
   if (metricPnlEl) {
@@ -295,7 +349,53 @@ function onTickEvent(evt) {
   const ddDollars = (currDdCents / 100.0).toFixed(2);
   const maxDdDollars = (liveMaxDrawdownCents / 100.0).toFixed(2);
   if (metricDdEl) metricDdEl.textContent = `$${ddDollars} / $${maxDdDollars}`;
-  if (metricVolEl) metricVolEl.textContent = Number(evt.volatility || 0).toFixed(2);
+  if (metricDdBarEl) {
+    const ddPct = Math.min(100, (liveMaxDrawdownCents / 25000.0) * 100);
+    metricDdBarEl.style.width = `${ddPct.toFixed(1)}%`;
+    metricDdBarEl.style.backgroundColor = ddPct >= 80 ? "#ef4444" : "#f59e0b";
+  }
+
+  const volVal = Number(evt.volatility || 0);
+  if (metricVolEl) metricVolEl.textContent = volVal.toFixed(2);
+  if (metricRegimeSubEl) {
+    if (evt.crash_active) {
+      metricRegimeSubEl.textContent = "FLASH CRASH";
+      metricRegimeSubEl.style.color = "#f87171";
+    } else if (volVal >= 3.2) {
+      metricRegimeSubEl.textContent = "Elevated vol";
+      metricRegimeSubEl.style.color = "#fbbf24";
+    } else {
+      metricRegimeSubEl.textContent = "Normal regime";
+      metricRegimeSubEl.style.color = "#64748b";
+    }
+  }
+
+  // Live Twin HUD & Quote Spread
+  if (hudTickEl && evt.tick !== undefined) {
+    hudTickEl.textContent = `Tick #${evt.tick}`;
+  }
+  const q = evt.quote || {};
+  if (hudQuotesEl) {
+    if (evt.killed) {
+      hudQuotesEl.textContent = "Bot Quotes: NONE (Killed by Human)";
+      hudQuotesEl.style.color = "#f87171";
+    } else if (evt.halted || (q.bid_price == null && q.ask_price == null)) {
+      hudQuotesEl.textContent = "Bot Quotes: HALTED (Circuit Breaker)";
+      hudQuotesEl.style.color = "#fbbf24";
+    } else {
+      const bp = q.bid_price != null ? `$${(Number(q.bid_price) / 100).toFixed(2)}×${q.bid_size ?? 0}` : "—";
+      const ap = q.ask_price != null ? `$${(Number(q.ask_price) / 100).toFixed(2)}×${q.ask_size ?? 0}` : "—";
+      hudQuotesEl.textContent = `Bot Quotes: Bid ${bp} | Ask ${ap}`;
+      hudQuotesEl.style.color = "#e2e8f0";
+    }
+  }
+  if (metricSpreadSubEl) {
+    if (q.bid_price != null && q.ask_price != null) {
+      metricSpreadSubEl.textContent = `Bot spread: ${Number(q.ask_price) - Number(q.bid_price)}¢`;
+    } else {
+      metricSpreadSubEl.textContent = evt.halted ? "Quotes halted" : "Quotes pulled";
+    }
+  }
 
   // Bot status pill in topbar
   if (evt.bot_status && botStatusTextEl) {
@@ -331,30 +431,47 @@ function onTickEvent(evt) {
 }
 
 // ==================== CONTROLS & ACTIONS ====================
+function applyDeskLimitValue(val) {
+  activeSliderLimit = Number(val);
+  if (sliderEl) sliderEl.value = String(activeSliderLimit);
+  if (limitValueEl) limitValueEl.textContent = `${activeSliderLimit} lots`;
+  if (loopSummaryStatusEl) {
+    loopSummaryStatusEl.innerHTML = `Desk rule: max inventory <strong>${activeSliderLimit} lots</strong>`;
+  }
+  if (activeSliderLimit < 100 && !pendingSignoff) {
+    if (stepPod1El) stepPod1El.classList.remove("active-step");
+    if (stepPod2El) stepPod2El.classList.add("active-step");
+  } else if (activeSliderLimit >= 100 && !pendingSignoff) {
+    if (stepPod1El) stepPod1El.classList.add("active-step");
+    if (stepPod2El) stepPod2El.classList.remove("active-step");
+  }
+}
+
 if (sliderEl) {
-  const onSliderInput = () => {
-    activeSliderLimit = Number(sliderEl.value);
-    if (limitValueEl) limitValueEl.textContent = `${activeSliderLimit} lots`;
-    if (loopSummaryStatusEl) {
-      loopSummaryStatusEl.innerHTML = `Desk rule: max inventory <strong>${activeSliderLimit} lots</strong>`;
-    }
-  };
+  const onSliderInput = () => applyDeskLimitValue(sliderEl.value);
   sliderEl.addEventListener("input", onSliderInput);
   sliderEl.addEventListener("change", onSliderInput);
 }
+
+document.querySelectorAll(".chip-btn[data-limit]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const targetLimit = Number(btn.getAttribute("data-limit") || 100);
+    applyDeskLimitValue(targetLimit);
+  });
+});
 
 if (modeRepairBtn && modeScratchBtn) {
   modeRepairBtn.addEventListener("click", () => {
     selectedMode = "repair";
     modeRepairBtn.classList.add("active");
     modeScratchBtn.classList.remove("active");
-    if (btnRun) btnRun.textContent = "Run Repair";
+    if (btnRun) btnRun.textContent = "⚡ Run Repair";
   });
   modeScratchBtn.addEventListener("click", () => {
     selectedMode = "scratch";
     modeScratchBtn.classList.add("active");
     modeRepairBtn.classList.remove("active");
-    if (btnRun) btnRun.textContent = "Run From Scratch";
+    if (btnRun) btnRun.textContent = "⚡ Run Scratch";
   });
 }
 
@@ -364,6 +481,10 @@ if (btnRun) {
     activeSliderLimit = limit;
     btnRun.disabled = true;
     if (btnOpenApprove) btnOpenApprove.disabled = true;
+    if (stepPod1El) stepPod1El.classList.remove("active-step");
+    if (stepPod2El) stepPod2El.classList.add("active-step");
+    if (stepPod3El) stepPod3El.classList.remove("active-step", "ready-approve");
+    if (signoffGateHintEl) signoffGateHintEl.textContent = "Verifying in sandbox...";
     pendingSignoff = null;
     panels.hideSignoffModal();
     panels.setChecksPending();
@@ -464,6 +585,10 @@ if (btnReset) {
       if (killedBannerEl) killedBannerEl.classList.add("hidden");
       if (haltedBannerEl) haltedBannerEl.classList.add("hidden");
       if (crashBannerEl) crashBannerEl.classList.add("hidden");
+      if (stepPod1El) stepPod1El.classList.add("active-step");
+      if (stepPod2El) stepPod2El.classList.remove("active-step");
+      if (stepPod3El) stepPod3El.classList.remove("active-step", "ready-approve");
+      if (signoffGateHintEl) signoffGateHintEl.textContent = "Locked until 7/7 holdout proof";
       if (stageLabelEl) stageLabelEl.textContent = "Live Digital Twin · Reset to Desk Strategy";
       panels.syncLimits(data.limits);
       panels.resetTimeline();

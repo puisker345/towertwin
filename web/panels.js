@@ -1,13 +1,13 @@
 // UI Panels: Loop Ring, Checks C1-C7, Timeline & Code Diffs, Red-Team Cards, 5x5 Sweep Heatmap, Sparklines, Sign-Off Modal
 
 const CHECK_META = [
-  { id: "C1", name: "Books Reconcile", defaultThreshold: "0 ¢ diff" },
-  { id: "C2", name: "Position Limit (Every Fill)", defaultThreshold: "≤ 100 lots" },
-  { id: "C3", name: "Order Size", defaultThreshold: "≤ 10 lots" },
-  { id: "C4", name: "Max Drawdown", defaultThreshold: "≤ $250.00" },
-  { id: "C5", name: "Crash Circuit Breaker", defaultThreshold: "≤ 5 ticks" },
-  { id: "C6", name: "Validation Profit", defaultThreshold: "> $0.00" },
-  { id: "C7", name: "Sandbox Clean & Bounded", defaultThreshold: "0 errors" },
+  { id: "C1", name: "Books Reconcile", defaultThreshold: "0 ¢ diff", desc: "Zero cash/fee/PnL discrepancy across all fills" },
+  { id: "C2", name: "Position Limit (Every Fill)", defaultThreshold: "≤ 100 lots", desc: "|position| ≤ limit after every single fill" },
+  { id: "C3", name: "Order Size", defaultThreshold: "≤ 10 lots", desc: "0 < order_size ≤ 10 lots & uncrossed quotes" },
+  { id: "C4", name: "Max Drawdown", defaultThreshold: "≤ $250.00", desc: "Running peak-to-trough drawdown ≤ $250.00" },
+  { id: "C5", name: "Crash Circuit Breaker", defaultThreshold: "≤ 5 ticks", desc: "Halts quoting within ≤ 5 ticks of flash crash" },
+  { id: "C6", name: "Validation Profit", defaultThreshold: "> $0.00", desc: "Final PnL > $0.00 on every unseen OOS seed" },
+  { id: "C7", name: "Sandbox Clean & Bounded", defaultThreshold: "0 errors", desc: "AST-validated subprocess · 0 errors · ≤5ms p99" },
 ];
 
 export class PanelsController {
@@ -33,6 +33,29 @@ export class PanelsController {
 
     this.initChecksPanel();
     this.clearHeatmap();
+    this._bindHeatmapHover();
+  }
+
+  _bindHeatmapHover() {
+    if (!this.heatmapCanvas) return;
+    this.heatmapCanvas.addEventListener("mousemove", (e) => {
+      const rect = this.heatmapCanvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const c = Math.min(4, Math.max(0, Math.floor(((e.clientX - rect.left) / rect.width) * 5)));
+      const r = Math.min(4, Math.max(0, Math.floor(((e.clientY - rect.top) / rect.height) * 5)));
+      const cell = this.sweepCells[r] && this.sweepCells[r][c];
+      if (cell && this.heatmapStatusEl) {
+        const pct = Math.round(Number(cell.pass_rate ?? 0) * 100);
+        const xv = cell.x_val !== undefined ? cell.x_val : c;
+        const yv = cell.y_val !== undefined ? cell.y_val : r;
+        this.heatmapStatusEl.textContent = `[${r},${c}] (${xv}, ${yv}): ${pct}% pass`;
+      }
+    });
+    this.heatmapCanvas.addEventListener("mouseleave", () => {
+      if (this.heatmapStatusEl && this.lastHeatmapSummary) {
+        this.heatmapStatusEl.textContent = this.lastHeatmapSummary;
+      }
+    });
   }
 
   // ==================== CHECKS PANEL (C1-C7) ====================
@@ -59,12 +82,12 @@ export class PanelsController {
       const row = document.createElement("div");
       row.id = `check-row-${meta.id}`;
       row.className = "check-row status-pass";
-      row.title = `${meta.id} (${meta.name}): Verified on startup desk strategy at 100 lots.`;
+      row.title = `${meta.id} (${meta.name}): ${meta.desc}`;
       row.innerHTML = `
         <span class="check-id">${meta.id}</span>
         <div class="check-name-wrap">
           <span class="check-name">${meta.name}</span>
-          <span class="check-detail-sub" id="check-detail-${meta.id}">Verified on startup desk strategy</span>
+          <span class="check-detail-sub" id="check-detail-${meta.id}">${meta.desc}</span>
         </div>
         <span class="check-metrics" id="check-metrics-${meta.id}">OK / ${meta.defaultThreshold}</span>
         <span class="check-pill pass" id="check-pill-${meta.id}">PASS</span>
@@ -200,6 +223,9 @@ export class PanelsController {
       });
       if (counterEl) counterEl.textContent = "Approved";
       if (subEl) subEl.textContent = "Live in twin";
+    } else if (st.includes("idle")) {
+      if (counterEl) counterEl.textContent = "Idle";
+      if (subEl) subEl.textContent = "Ready to verify";
     }
   }
 
@@ -207,7 +233,11 @@ export class PanelsController {
   resetTimeline() {
     this.iterations.clear();
     if (this.timelineListEl) {
-      this.timelineListEl.innerHTML = "";
+      this.timelineListEl.innerHTML = `
+        <div class="timeline-empty">
+          <strong>How to test:</strong> Lower <em>Desk Position Limit</em> to <strong>60 lots</strong> in Step 1 below, then click <strong>Run Repair</strong> in Step 2 to watch Iteration 0 catch the breach and Argon repair it.
+        </div>
+      `;
     }
     if (this.timelineCountEl) {
       this.timelineCountEl.textContent = "0 iterations";
@@ -325,7 +355,11 @@ export class PanelsController {
   resetRedteam() {
     this.redteamCount = 0;
     if (this.redteamGridEl) {
-      this.redteamGridEl.innerHTML = "";
+      this.redteamGridEl.innerHTML = `
+        <div class="redteam-placeholder">
+          6 adversarial flash-crash &amp; volatility regimes stream here in parallel during strategy repair...
+        </div>
+      `;
     }
     if (this.redteamCountEl) {
       this.redteamCountEl.textContent = "0 / 6 generated";
@@ -360,8 +394,9 @@ export class PanelsController {
   clearHeatmap() {
     this.sweepCells = Array.from({ length: 5 }, () => Array(5).fill(null));
     this.chosenCell = null;
+    this.lastHeatmapSummary = "Awaiting sweep...";
     if (this.heatmapStatusEl) {
-      this.heatmapStatusEl.textContent = "Awaiting sweep...";
+      this.heatmapStatusEl.textContent = this.lastHeatmapSummary;
     }
     this._drawHeatmap();
   }
@@ -376,8 +411,9 @@ export class PanelsController {
       this.heatmapAxesEl.innerHTML = `X: <code>${this._escapeHtml(evt.param_x)}</code><br/>Y: <code>${this._escapeHtml(evt.param_y)}</code>`;
     }
     const filled = this.sweepCells.flat().filter(Boolean).length;
+    this.lastHeatmapSummary = `Sweeping ${filled}/25 cells...`;
     if (this.heatmapStatusEl) {
-      this.heatmapStatusEl.textContent = `Sweeping ${filled}/25 cells...`;
+      this.heatmapStatusEl.textContent = this.lastHeatmapSummary;
     }
     this._drawHeatmap();
   }
@@ -388,8 +424,10 @@ export class PanelsController {
     } else if (evt.best_row !== undefined && evt.best_col !== undefined) {
       this.chosenCell = { row: evt.best_row, col: evt.best_col };
     }
+    const passCells = this.sweepCells.flat().filter((cell) => cell && Number(cell.pass_rate ?? 0) >= 0.999).length;
+    this.lastHeatmapSummary = `${passCells}/25 safe · optimal outlined`;
     if (this.heatmapStatusEl) {
-      this.heatmapStatusEl.textContent = "25/25 complete · optimal outlined";
+      this.heatmapStatusEl.textContent = this.lastHeatmapSummary;
     }
     this._drawHeatmap();
   }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TowerTwin · Digital Twin &amp; Formal Verification Loop</title>
-  <link rel="stylesheet" href="/static/style.css?v=2" />
+  <link rel="stylesheet" href="/static/style.css?v=3" />
   <!-- Three.js from cdnjs.cloudflare.com per SPEC Section 10.4 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -19,7 +19,7 @@
     </div>
 
     <div class="topbar-center">
-      <div id="bot-status-pill" class="bot-status-pill">
+      <div id="bot-status-pill" class="bot-status-pill" title="Live strategy running inside isolated sandbox worker">
         <span class="status-dot live"></span>
         <span id="bot-status-text">Running: desk strategy · verified at limit 100</span>
       </div>
@@ -31,34 +31,54 @@
     </div>
   </header>
 
-  <!-- MAIN WORKSPACE (Centre 60% 3D Twin + Red-Team Strip | Right 40% Loop Ring + Checks + Timeline) -->
+  <!-- MAIN WORKSPACE -->
   <main class="workspace">
-    <!-- CENTRE COLUMN (~60% width) -->
+    <!-- LEFT / CENTRE COLUMN: LIVE DIGITAL TWIN + SPARKLINES + RED-TEAM SCENARIOS -->
     <section class="centre-col">
-      <!-- Live Telemetry Readout Bar (minimum 18px key numbers) -->
+      <!-- Live Telemetry Readout Bar (minimum 18px key numbers + visual gauges) -->
       <div class="telemetry-bar">
-        <div class="metric-box">
+        <div class="metric-box" title="Current simulated exchange mid-price in dollars">
           <span class="metric-label">MID PRICE</span>
           <span id="metric-mid" class="metric-value">$100.00</span>
+          <span id="metric-spread-sub" class="metric-sub">Spread: 2¢</span>
         </div>
-        <div class="metric-box" id="metric-pos-box">
-          <span class="metric-label">POSITION / LIMIT</span>
+
+        <div class="metric-box metric-box-wide" id="metric-pos-box" title="Current net inventory (lots) vs active desk position limit (Check C2)">
+          <div class="metric-header-row">
+            <span class="metric-label">POSITION / LIMIT (C2)</span>
+            <span id="metric-pos-badge" class="metric-mini-badge safe">SAFE</span>
+          </div>
           <span id="metric-pos" class="metric-value">0 / 100</span>
+          <div class="metric-gauge-track">
+            <div id="metric-pos-bar" class="metric-gauge-fill" style="width: 0%"></div>
+          </div>
         </div>
-        <div class="metric-box">
+
+        <div class="metric-box" title="Realized + unrealized mark-to-market profit/loss (Check C1 & C6)">
           <span class="metric-label">MARK-TO-MARKET PnL</span>
-          <span id="metric-pnl" class="metric-value">+$0.00</span>
+          <span id="metric-pnl" class="metric-value positive">+$0.00</span>
+          <span class="metric-sub">Zero-diff ledger (C1)</span>
         </div>
-        <div class="metric-box">
-          <span class="metric-label">DRAWDOWN (CURR / MAX)</span>
+
+        <div class="metric-box metric-box-wide" title="Current drawdown vs running peak-to-trough Max Drawdown (Check C4 limit: $250.00)">
+          <div class="metric-header-row">
+            <span class="metric-label">DRAWDOWN (CURR / MAX)</span>
+            <span class="metric-sub-cap">Cap $250</span>
+          </div>
           <span id="metric-dd" class="metric-value">$0.00 / $0.00</span>
+          <div class="metric-gauge-track">
+            <div id="metric-dd-bar" class="metric-gauge-fill gauge-dd" style="width: 0%"></div>
+          </div>
         </div>
-        <div class="metric-box">
+
+        <div class="metric-box" title="Rolling realized mid-price volatility (cents/tick) — triggers C5 circuit breaker during crash">
           <span class="metric-label">REALIZED VOL</span>
           <span id="metric-vol" class="metric-value">1.80</span>
+          <span id="metric-regime-sub" class="metric-sub">Normal regime</span>
         </div>
+
         <div class="metric-actions">
-          <button id="btn-view-mode" class="btn btn-secondary btn-sm" title="Switch between 3D Terrain and 2D Chart">
+          <button id="btn-view-mode" class="btn btn-secondary btn-sm" title="Switch between 3D Order-Book Terrain and 2D Price/Quote Chart">
             2D Mode
           </button>
         </div>
@@ -69,97 +89,160 @@
         <canvas id="twin-3d-canvas" class="twin-canvas"></canvas>
         <canvas id="twin-2d-canvas" class="twin-canvas hidden"></canvas>
 
+        <!-- Top-Left Live Bot Quote HUD -->
+        <div class="twin-hud-top">
+          <div class="twin-hud-pill">
+            <span class="hud-title">LIVE ORDER-BOOK TWIN</span>
+            <span class="hud-sep">·</span>
+            <span id="hud-tick" class="hud-mono">Tick #0</span>
+            <span class="hud-sep">·</span>
+            <span id="hud-quotes" class="hud-quotes">Bot Quotes: Bid $99.98 × 8 | Ask $100.02 × 8</span>
+          </div>
+          <div class="twin-hud-axis">
+            <span class="axis-tag bid-tag">← Bids (Buy Liquidity)</span>
+            <span class="axis-tag mid-tag">Mid Spine</span>
+            <span class="axis-tag ask-tag">Asks (Sell Liquidity) →</span>
+          </div>
+        </div>
+
         <!-- Floating status overlays (HALTED, CRASH, KILLED) -->
         <div id="twin-halted-banner" class="twin-overlay-banner banner-halted hidden">
-          HALTED · circuit breaker
+          ⚡ HALTED · Volatility Circuit Breaker Active (Quotes Pulled)
         </div>
         <div id="twin-crash-banner" class="twin-overlay-banner banner-crash hidden">
-          FLASH CRASH IN PROGRESS
+          ⚠️ FLASH CRASH IN PROGRESS · Liquidity Evaporating
         </div>
         <div id="twin-killed-banner" class="twin-overlay-banner banner-killed hidden">
-          KILLED BY HUMAN
+          🛑 KILLED BY HUMAN · All Quotes Pulled Immediately
         </div>
 
         <!-- Legend Overlay -->
         <div class="twin-legend">
-          <span class="legend-item"><i class="dot dot-bid"></i>Bid Depth</span>
-          <span class="legend-item"><i class="dot dot-ask"></i>Ask Depth</span>
-          <span class="legend-item"><i class="dot dot-mid"></i>Mid Price</span>
-          <span class="legend-item"><i class="dot dot-quote"></i>Bot Quotes</span>
-          <span class="legend-item"><i class="dot dot-fill"></i>Fill Ripple</span>
+          <span class="legend-item" title="Resting buy orders in the exchange book"><i class="dot dot-bid"></i>Bid Depth</span>
+          <span class="legend-item" title="Resting sell orders in the exchange book"><i class="dot dot-ask"></i>Ask Depth</span>
+          <span class="legend-item" title="Exchange mid-price trajectory over the last 120 ticks"><i class="dot dot-mid"></i>Mid Price</span>
+          <span class="legend-item" title="Strategy's active bid and ask quotes"><i class="dot dot-quote"></i>Bot Quotes</span>
+          <span class="legend-item" title="Expanding ripple whenever our strategy gets filled"><i class="dot dot-fill"></i>Fill Ripple</span>
         </div>
       </div>
 
-      <!-- Red-Team Scenarios Strip (6 cards landing during loop) -->
-      <div class="redteam-panel">
-        <div class="panel-header-inline">
-          <span class="panel-title">ADVERSARIAL RED-TEAM SCENARIOS (GEMINI 3.8 FLASH)</span>
-          <span id="redteam-count" class="panel-subtitle">0 / 6 generated</span>
+      <!-- Bottom of Centre Col: Live Rolling Sparklines + Adversarial Red-Team Scenarios -->
+      <div class="centre-bottom-row">
+        <!-- Sparklines Cluster -->
+        <div class="sparklines-cluster">
+          <div class="spark-card" title="Rolling 100-tick mark-to-market PnL trajectory">
+            <div class="spark-header">
+              <span class="spark-title">LIVE PnL ($)</span>
+              <span id="spark-pnl-val" class="spark-val">+$0.00</span>
+            </div>
+            <canvas id="spark-pnl-canvas" width="210" height="50"></canvas>
+          </div>
+          <div class="spark-card" title="Rolling 100-tick inventory vs dashed red desk limit bounds">
+            <div class="spark-header">
+              <span class="spark-title">INVENTORY vs LIMIT</span>
+              <span id="spark-pos-val" class="spark-val">0 / 100</span>
+            </div>
+            <canvas id="spark-pos-canvas" width="210" height="50"></canvas>
+          </div>
         </div>
-        <div id="redteam-grid" class="redteam-grid">
-          <div class="redteam-placeholder">Adversarial stress scenarios will stream here in parallel during strategy repair...</div>
+
+        <!-- Red-Team Scenarios Strip (6 cards landing during loop) -->
+        <div class="redteam-panel">
+          <div class="panel-header-inline">
+            <div class="panel-title-group">
+              <span class="panel-title">ADVERSARIAL RED-TEAM STRESS (GEMINI 3.8 FLASH)</span>
+            </div>
+            <span id="redteam-count" class="panel-subtitle">0 / 6 generated</span>
+          </div>
+          <div id="redteam-grid" class="redteam-grid">
+            <div class="redteam-placeholder">
+              6 adversarial flash-crash &amp; volatility regimes stream here in parallel during strategy repair...
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- RIGHT COLUMN (~40% width) -->
+    <!-- RIGHT COLUMN: LOOP RING + 5x5 SWEEP + DETERMINISTIC CHECKS C1-C7 + ITERATION TIMELINE -->
     <aside class="right-col">
-      <!-- Top: Loop Ring -->
-      <div class="card loop-ring-card">
-        <div class="loop-ring-layout">
-          <div class="loop-ring-svg-wrap">
-            <svg class="loop-ring-svg" viewBox="0 0 260 225" aria-label="Verification Loop Ring">
-              <!-- Connecting circle path -->
-              <circle cx="130" cy="92" r="64" class="ring-track" />
-              <line x1="130" y1="156" x2="130" y2="195" class="ring-track-approve" />
+      <!-- Top Row: Formal Verification Loop Ring + 5x5 Parameter Sweep Heatmap -->
+      <div class="right-top-split">
+        <!-- Loop Ring Card -->
+        <div class="card loop-ring-card">
+          <div class="loop-ring-layout">
+            <div class="loop-ring-svg-wrap">
+              <svg class="loop-ring-svg" viewBox="0 0 250 220" aria-label="Verification Loop Ring">
+                <circle cx="125" cy="88" r="60" class="ring-track" />
+                <line x1="125" y1="148" x2="125" y2="186" class="ring-track-approve" />
 
-              <!-- Node 1: Propose (Top) -->
-              <g id="ring-node-propose" class="ring-node" transform="translate(130, 28)">
-                <circle r="16" class="node-circle" />
-                <text y="-22" text-anchor="middle" class="node-label">1. Propose</text>
-              </g>
+                <!-- Node 1: Propose -->
+                <g id="ring-node-propose" class="ring-node" transform="translate(125, 28)">
+                  <circle r="15" class="node-circle" />
+                  <text y="-20" text-anchor="middle" class="node-label">1. Propose</text>
+                </g>
 
-              <!-- Node 2: Run sandbox (Right) -->
-              <g id="ring-node-sandbox" class="ring-node" transform="translate(194, 92)">
-                <circle r="16" class="node-circle" />
-                <text x="22" y="5" text-anchor="start" class="node-label">2. Sandbox</text>
-              </g>
+                <!-- Node 2: Sandbox -->
+                <g id="ring-node-sandbox" class="ring-node" transform="translate(185, 88)">
+                  <circle r="15" class="node-circle" />
+                  <text x="20" y="4" text-anchor="start" class="node-label">2. Sandbox</text>
+                </g>
 
-              <!-- Node 3: Check proof (Bottom of circle) -->
-              <g id="ring-node-checks" class="ring-node" transform="translate(130, 156)">
-                <circle r="16" class="node-circle" />
-                <text x="22" y="14" text-anchor="start" class="node-label">3. Check proof</text>
-              </g>
+                <!-- Node 3: Check proof -->
+                <g id="ring-node-checks" class="ring-node" transform="translate(125, 148)">
+                  <circle r="15" class="node-circle" />
+                  <text x="20" y="13" text-anchor="start" class="node-label">3. Check proof</text>
+                </g>
 
-              <!-- Node 4: Refine (Left) -->
-              <g id="ring-node-refine" class="ring-node" transform="translate(66, 92)">
-                <circle r="16" class="node-circle" />
-                <text x="-22" y="5" text-anchor="end" class="node-label">4. Refine</text>
-              </g>
+                <!-- Node 4: Refine -->
+                <g id="ring-node-refine" class="ring-node" transform="translate(65, 88)">
+                  <circle r="15" class="node-circle" />
+                  <text x="-20" y="4" text-anchor="end" class="node-label">4. Refine</text>
+                </g>
 
-              <!-- Node 5: Approve (Below circle) -->
-              <g id="ring-node-approve" class="ring-node ring-node-approve" transform="translate(130, 202)">
-                <rect x="-46" y="-13" width="92" height="26" rx="13" class="node-rect" />
-                <text y="5" text-anchor="middle" class="node-label-approve">5. Approve</text>
-              </g>
+                <!-- Node 5: Approve -->
+                <g id="ring-node-approve" class="ring-node ring-node-approve" transform="translate(125, 194)">
+                  <rect x="-44" y="-12" width="88" height="24" rx="12" class="node-rect" />
+                  <text y="4" text-anchor="middle" class="node-label-approve">5. Approve</text>
+                </g>
 
-              <!-- Centre Iteration Counter -->
-              <text id="loop-iter-counter" x="130" y="89" text-anchor="middle" class="ring-center-title">Idle</text>
-              <text id="loop-iter-sub" x="130" y="107" text-anchor="middle" class="ring-center-sub">Ready to verify</text>
-            </svg>
+                <!-- Centre Iteration Counter -->
+                <text id="loop-iter-counter" x="125" y="85" text-anchor="middle" class="ring-center-title">Idle</text>
+                <text id="loop-iter-sub" x="125" y="102" text-anchor="middle" class="ring-center-sub">Ready to verify</text>
+              </svg>
+            </div>
+
+            <div class="loop-ring-info">
+              <div class="panel-title">FORMAL VERIFICATION LOOP</div>
+              <div id="loop-summary-status" class="loop-summary-status">
+                Desk rule: max inventory <strong>100 lots</strong>
+              </div>
+              <div id="loop-artifact-badge" class="artifact-badge-inline" title="SHA-256 prefix of currently active strategy code + params + limits">
+                Active Artifact: <code id="active-artifact-id">init...</code>
+              </div>
+              <div id="loop-verify-summary" class="loop-verify-summary">
+                Python grades every fill across in-sample, OOS &amp; untouched holdout seeds.
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div class="loop-ring-info">
-            <div class="panel-title">FORMAL VERIFICATION LOOP</div>
-            <div id="loop-summary-status" class="loop-summary-status">
-              Desk rule: max inventory <strong>100 lots</strong>
+        <!-- 5x5 Parameter Sweep Heatmap Card -->
+        <div class="card heatmap-cluster">
+          <div class="heatmap-info">
+            <div class="panel-title">5×5 PARAMETER SWEEP</div>
+            <div id="heatmap-axes-label" class="heatmap-axes-label">
+              X: <code>skew_bps_per_lot</code><br />
+              Y: <code>vol_halt_threshold</code>
             </div>
-            <div id="loop-artifact-badge" class="artifact-badge-inline">
-              Active Artifact: <code id="active-artifact-id">init...</code>
+            <div id="heatmap-status" class="heatmap-status">Awaiting sweep...</div>
+            <div class="heatmap-legend">
+              <span class="hm-leg"><i class="hm-swatch hm-fail"></i>Fail</span>
+              <span class="hm-leg"><i class="hm-swatch hm-pass"></i>Pass</span>
+              <span class="hm-leg"><i class="hm-swatch hm-best"></i>Chosen</span>
             </div>
-            <div id="loop-verify-summary" class="loop-verify-summary">
-              Deterministic checks C1–C7 grade every fill in a restricted subprocess.
-            </div>
+          </div>
+          <div class="heatmap-canvas-wrap">
+            <canvas id="heatmap-canvas" width="96" height="84" title="Hover cells after sweep to inspect pass rate"></canvas>
           </div>
         </div>
       </div>
@@ -167,7 +250,10 @@
       <!-- Middle: Deterministic Checks Panel (C1–C7) -->
       <div class="card checks-card">
         <div class="panel-header-inline">
-          <span class="panel-title">DETERMINISTIC PROOF CHECKS (C1–C7)</span>
+          <div class="panel-title-group">
+            <span class="panel-title">DETERMINISTIC PROOF CHECKS (C1–C7)</span>
+            <span class="panel-hint">Pure Python evaluator · LLM never grades itself</span>
+          </div>
           <span id="checks-pass-summary" class="checks-pass-summary">7 / 7 PASS</span>
         </div>
         <div id="checks-list" class="checks-list">
@@ -178,25 +264,37 @@
       <!-- Bottom of Right Col: Iteration Timeline -->
       <div class="card timeline-card">
         <div class="panel-header-inline">
-          <span class="panel-title">ITERATION TIMELINE &amp; CODE DIFFS</span>
+          <div class="panel-title-group">
+            <span class="panel-title">ITERATION TIMELINE &amp; CODE DIFFS</span>
+            <span class="panel-hint">Click any iteration to inspect code diff</span>
+          </div>
           <span id="timeline-count" class="panel-subtitle">0 iterations</span>
         </div>
         <div id="timeline-list" class="timeline-list">
           <div class="timeline-empty">
-            Adjust the desk position limit and click <strong>Run Repair</strong> to start the formal verification loop.
+            <strong>How to test:</strong> Lower <em>Desk Position Limit</em> to <strong>60 lots</strong> in Step 1 below, then click <strong>Run Repair</strong> in Step 2 to watch Iteration 0 catch the breach and Argon repair it.
           </div>
         </div>
       </div>
     </aside>
   </main>
 
-  <!-- BOTTOM STRIP: Controls + Sparklines + 5x5 Parameter Sweep Heatmap -->
+  <!-- BOTTOM COMMAND DOCK: Guided 3-Step Workflow + Stress Controls -->
   <footer class="bottom-strip">
-    <!-- Controls Cluster -->
-    <div class="controls-cluster">
+    <!-- STEP 1: Tighten Desk Risk Rule -->
+    <div id="step-pod-1" class="workflow-pod active-step">
+      <div class="pod-header">
+        <span class="step-badge">STEP 1</span>
+        <span class="pod-title">TIGHTEN DESK RISK LIMIT</span>
+        <div class="preset-chips">
+          <button type="button" class="chip-btn" data-limit="100" title="Baseline safe limit (100 lots)">100</button>
+          <button type="button" class="chip-btn chip-breach" data-limit="60" title="Tighten to 60 lots (triggers C2 breach)">60 · Breach</button>
+          <button type="button" class="chip-btn" data-limit="40" title="Strict 40 lots limit">40</button>
+        </div>
+      </div>
       <div class="slider-group">
         <label for="limit-slider" class="control-label">
-          DESK POSITION LIMIT: <span id="limit-value" class="limit-readout">100 lots</span>
+          MAX INVENTORY: <span id="limit-value" class="limit-readout">100 lots</span>
         </label>
         <input
           type="range"
@@ -208,58 +306,52 @@
           class="limit-slider"
         />
       </div>
+    </div>
 
-      <div class="mode-group" role="group" aria-label="Loop Mode">
-        <button id="mode-repair" class="mode-btn active" data-mode="repair" title="Repair current desk strategy">
-          Repair
-        </button>
-        <button id="mode-scratch" class="mode-btn" data-mode="scratch" title="Synthesize strategy from scratch">
-          From scratch
-        </button>
+    <!-- STEP 2: Run Autonomous Repair Loop -->
+    <div id="step-pod-2" class="workflow-pod">
+      <div class="pod-header">
+        <span class="step-badge">STEP 2</span>
+        <span class="pod-title">ARGON REPAIR &amp; PROOF LOOP</span>
       </div>
+      <div class="pod-controls">
+        <div class="mode-group" role="group" aria-label="Loop Mode">
+          <button id="mode-repair" class="mode-btn active" data-mode="repair" title="Repair current desk strategy">
+            Repair
+          </button>
+          <button id="mode-scratch" class="mode-btn" data-mode="scratch" title="Synthesize strategy from scratch">
+            From scratch
+          </button>
+        </div>
+        <button id="btn-run" class="btn btn-primary">⚡ Run Repair</button>
+      </div>
+    </div>
 
+    <!-- STEP 3: Human Sign-Off Gate -->
+    <div id="step-pod-3" class="workflow-pod">
+      <div class="pod-header">
+        <span class="step-badge">STEP 3</span>
+        <span class="pod-title">HUMAN SIGN-OFF GATE</span>
+      </div>
+      <div class="pod-controls">
+        <button id="btn-open-approve" class="btn btn-approve" disabled>✓ Approve Sign-Off</button>
+        <span id="signoff-gate-hint" class="gate-hint">Locked until 7/7 holdout proof</span>
+      </div>
+    </div>
+
+    <!-- LIVE STRESS & OVERRIDE CONTROLS -->
+    <div class="workflow-pod stress-pod">
+      <div class="pod-header">
+        <span class="step-badge badge-live">LIVE TWIN</span>
+        <span class="pod-title">STRESS &amp; SAFETY OVERRIDE</span>
+      </div>
       <div class="action-buttons">
-        <button id="btn-run" class="btn btn-primary">Run Repair</button>
-        <button id="btn-open-approve" class="btn btn-approve" disabled>Approve Sign-Off</button>
-        <button id="btn-crash" class="btn btn-warning">Trigger Flash Crash</button>
-        <button id="btn-kill" class="btn btn-danger">Kill Switch</button>
-        <button id="btn-reset" class="btn btn-secondary">Reset</button>
+        <button id="btn-crash" class="btn btn-warning" title="Inject a live flash crash into the order book twin">⚡ Trigger Flash Crash</button>
+        <button id="btn-kill" class="btn btn-danger" title="Immediate human kill switch — pulls all quotes to None">🛑 Kill Switch</button>
+        <button id="btn-reset" class="btn btn-secondary" title="Reset live twin and desk strategy to 100 lots">↺ Reset</button>
         <button id="btn-audio-mute" class="btn btn-secondary btn-audio" title="Toggle WebAudio fill sonar pings">
           🔇 Sonar Off
         </button>
-      </div>
-    </div>
-
-    <!-- Sparklines Cluster -->
-    <div class="sparklines-cluster">
-      <div class="spark-card">
-        <div class="spark-header">
-          <span class="spark-title">LIVE PnL ($)</span>
-          <span id="spark-pnl-val" class="spark-val">+$0.00</span>
-        </div>
-        <canvas id="spark-pnl-canvas" width="210" height="54"></canvas>
-      </div>
-      <div class="spark-card">
-        <div class="spark-header">
-          <span class="spark-title">INVENTORY vs LIMIT</span>
-          <span id="spark-pos-val" class="spark-val">0 / 100</span>
-        </div>
-        <canvas id="spark-pos-canvas" width="210" height="54"></canvas>
-      </div>
-    </div>
-
-    <!-- 5x5 Parameter Sweep Heatmap Cluster -->
-    <div class="heatmap-cluster">
-      <div class="heatmap-info">
-        <div class="spark-title">5×5 PARAMETER SWEEP</div>
-        <div id="heatmap-axes-label" class="heatmap-axes-label">
-          X: <code>skew_bps_per_lot</code><br />
-          Y: <code>vol_halt_threshold</code>
-        </div>
-        <div id="heatmap-status" class="heatmap-status">Awaiting sweep...</div>
-      </div>
-      <div class="heatmap-canvas-wrap">
-        <canvas id="heatmap-canvas" width="110" height="72" title="5x5 Parameter Sweep Pass-Rate Heatmap"></canvas>
       </div>
     </div>
   </footer>
@@ -281,7 +373,7 @@
           <code id="modal-artifact-id" class="meta-code">--------</code>
         </div>
         <div class="meta-pill">
-          <span class="meta-label">SHA-256 HASH</span>
+          <span class="meta-label">SHA-256 HASH (CODE + PARAMS + LIMITS)</span>
           <code id="modal-artifact-hash" class="meta-code-sm">...</code>
         </div>
         <div class="meta-pill">
@@ -302,20 +394,18 @@
 
       <!-- Rendered Markdown Report -->
       <div id="modal-report-md" class="modal-report-body">
-        <!-- Populated by panels.js -->
+        Loading verification report...
       </div>
 
       <div class="modal-footer">
-        <button id="btn-modal-reject" class="btn btn-secondary">
-          Reject (Keep Current Desk Bot)
-        </button>
+        <button id="btn-modal-reject" class="btn btn-secondary">Close / Keep Inspecting</button>
         <button id="btn-modal-approve" class="btn btn-approve-lg">
-          ✓ Approve &amp; Swap Live Strategy
+          ✓ Approve &amp; Hot-Swap Live Strategy
         </button>
       </div>
     </div>
   </div>
 
-  <script type="module" src="/static/app.js?v=2"></script>
+  <script type="module" src="/static/app.js?v=3"></script>
 </body>
 </html>
