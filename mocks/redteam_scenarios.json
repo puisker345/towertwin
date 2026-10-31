@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Deep Flash Cascade",
+    "description": "Severe 12% cascade over 25 ticks with 6x volatility and heavy forced selling.",
+    "start": 1800,
+    "depth_pct": 12.0,
+    "duration": 25,
+    "sigma_mult": 6.0,
+    "sell_flow_mult": 5.0,
+    "buy_flow_mult": 0.2,
+    "recovery_pct": 35.0
+  },
+  {
+    "name": "Ultra-Fast Liquidity Vacuum",
+    "description": "Violent 8% air-pocket drop in just 10 ticks with 7x volatility spike.",
+    "start": 2100,
+    "depth_pct": 8.0,
+    "duration": 10,
+    "sigma_mult": 7.0,
+    "sell_flow_mult": 5.5,
+    "buy_flow_mult": 0.2,
+    "recovery_pct": 50.0
+  },
+  {
+    "name": "Early Session Shock",
+    "description": "Sudden 7% markdown at tick 650 while books are still building inventory.",
+    "start": 650,
+    "depth_pct": 7.0,
+    "duration": 25,
+    "sigma_mult": 5.5,
+    "sell_flow_mult": 4.5,
+    "buy_flow_mult": 0.3,
+    "recovery_pct": 45.0
+  },
+  {
+    "name": "Short-Cover Spike Squeeze",
+    "description": "Aggressive 9% upside melt-up driven by 5.2x buy-side sweep flow over 20 ticks.",
+    "start": 1600,
+    "depth_pct": 9.0,
+    "duration": 20,
+    "sigma_mult": 6.0,
+    "sell_flow_mult": 0.2,
+    "buy_flow_mult": 5.2,
+    "recovery_pct": 30.0
+  },
+  {
+    "name": "High-Vol Whipsaw Regime",
+    "description": "Extreme 8.5x volatility regime with rapid 6.5% whipsaw over 20 ticks.",
+    "start": 1400,
+    "depth_pct": 6.5,
+    "duration": 20,
+    "sigma_mult": 8.5,
+    "sell_flow_mult": 3.8,
+    "buy_flow_mult": 1.2,
+    "recovery_pct": 60.0
+  },
+  {
+    "name": "Liquidity Drought & L-Shape",
+    "description": "8.5% markdown over 35 ticks followed by a sluggish 15% recovery.",
+    "start": 1950,
+    "depth_pct": 8.5,
+    "duration": 35,
+    "sigma_mult": 5.5,
+    "sell_flow_mult": 4.2,
+    "buy_flow_mult": 0.2,
+    "recovery_pct": 15.0
+  }
+]
