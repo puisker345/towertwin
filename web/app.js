@@ -1,8 +1,8 @@
 // Main Frontend Controller (ES Module) for TowerTwin (Section 10.4)
 
-import { audioEngine } from "./audio.js?v=3";
-import { PanelsController } from "./panels.js?v=3";
-import { TwinVisualizer } from "./twin3d.js?v=3";
+import { audioEngine } from "./audio.js?v=4";
+import { PanelsController } from "./panels.js?v=4";
+import { TwinVisualizer } from "./twin3d.js?v=4";
 
 const panels = new PanelsController();
 const twin = new TwinVisualizer(

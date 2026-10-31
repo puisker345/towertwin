@@ -230,6 +230,11 @@ async def serve_index() -> Response:
     )
 
 
+@app.get("/favicon.ico", response_model=None)
+async def serve_favicon() -> Response:
+    return Response(status_code=204)
+
+
 @app.get("/{asset_name}", response_model=None)
 async def serve_web_asset(asset_name: str) -> Response:
     if asset_name in ("style.css", "app.js", "panels.js", "twin3d.js", "audio.js"):

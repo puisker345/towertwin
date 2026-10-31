@@ -46,9 +46,12 @@ export class PanelsController {
       const cell = this.sweepCells[r] && this.sweepCells[r][c];
       if (cell && this.heatmapStatusEl) {
         const pct = Math.round(Number(cell.pass_rate ?? 0) * 100);
-        const xv = cell.x_val !== undefined ? cell.x_val : c;
-        const yv = cell.y_val !== undefined ? cell.y_val : r;
-        this.heatmapStatusEl.textContent = `[${r},${c}] (${xv}, ${yv}): ${pct}% pass`;
+        const xv = cell.val_x !== undefined ? cell.val_x : cell.x_val !== undefined ? cell.x_val : c;
+        const yv = cell.val_y !== undefined ? cell.val_y : cell.y_val !== undefined ? cell.y_val : r;
+        const px = cell.param_x || "half_spread_ticks";
+        const py = cell.param_y || "skew_per_lot";
+        this.heatmapStatusEl.textContent = `(${xv}, ${yv}) · ${pct}% pass`;
+        this.heatmapCanvas.title = `[${r},${c}] (${px}=${xv}, ${py}=${yv}): ${pct}% pass`;
       }
     });
     this.heatmapCanvas.addEventListener("mouseleave", () => {
@@ -407,8 +410,13 @@ export class PanelsController {
     if (r >= 0 && r < 5 && c >= 0 && c < 5) {
       this.sweepCells[r][c] = evt;
     }
-    if (evt.param_x && evt.param_y && this.heatmapAxesEl) {
-      this.heatmapAxesEl.innerHTML = `X: <code>${this._escapeHtml(evt.param_x)}</code><br/>Y: <code>${this._escapeHtml(evt.param_y)}</code>`;
+    if (evt.param_x && evt.param_y) {
+      if (this.heatmapAxesEl) {
+        this.heatmapAxesEl.innerHTML = `X: <code>${this._escapeHtml(evt.param_x)}</code><br/>Y: <code>${this._escapeHtml(evt.param_y)}</code>`;
+      }
+      if (this.heatmapCanvas) {
+        this.heatmapCanvas.title = `5×5 Parameter Sweep (${evt.param_x} × ${evt.param_y})`;
+      }
     }
     const filled = this.sweepCells.flat().filter(Boolean).length;
     this.lastHeatmapSummary = `Sweeping ${filled}/25 cells...`;
@@ -419,7 +427,18 @@ export class PanelsController {
   }
 
   onSweepDone(evt) {
-    if (evt.chosen_cell) {
+    if (Array.isArray(evt.sweep_params) && evt.sweep_params.length >= 2) {
+      const [px, py] = evt.sweep_params;
+      if (this.heatmapAxesEl) {
+        this.heatmapAxesEl.innerHTML = `X: <code>${this._escapeHtml(px)}</code><br/>Y: <code>${this._escapeHtml(py)}</code>`;
+      }
+      if (this.heatmapCanvas) {
+        this.heatmapCanvas.title = `5×5 Parameter Sweep (${px} × ${py})`;
+      }
+    }
+    if (evt.best_cell) {
+      this.chosenCell = evt.best_cell;
+    } else if (evt.chosen_cell) {
       this.chosenCell = evt.chosen_cell;
     } else if (evt.best_row !== undefined && evt.best_col !== undefined) {
       this.chosenCell = { row: evt.best_row, col: evt.best_col };

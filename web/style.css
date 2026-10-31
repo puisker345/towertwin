@@ -412,7 +412,7 @@ html, body {
 
 .twin-overlay-banner {
   position: absolute;
-  top: 42px;
+  top: 52px;
   left: 50%;
   transform: translateX(-50%);
   padding: 7px 20px;
@@ -434,7 +434,7 @@ html, body {
 }
 
 .banner-crash {
-  top: 84px;
+  top: 94px;
   background: rgba(239, 68, 68, 0.92);
   color: #ffffff;
   border: 2px solid #fca5a5;
@@ -1585,15 +1585,89 @@ html, body {
   background: #34d399;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1440px) {
+/* Responsive adjustments for 1366x768 and compact 16:9 screens */
+@media (max-width: 1560px) {
+  .workspace {
+    grid-template-columns: 55% 45%;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .telemetry-bar {
+    grid-template-columns: 0.8fr 1.15fr 0.98fr 1.32fr 0.78fr auto;
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  .metric-box {
+    padding-right: 5px;
+    min-width: 0;
+  }
+  .metric-label {
+    font-size: 9px;
+    letter-spacing: 0.03em;
+  }
   .metric-value {
     font-size: 18px;
   }
-  .workspace {
-    grid-template-columns: 55% 45%;
+  .metric-sub-cap {
+    display: none;
+  }
+  #btn-view-mode {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+  .twin-hud-axis {
+    display: none;
+  }
+  .spark-title {
+    font-size: 9px;
+  }
+  .spark-val {
+    font-size: 11.5px;
+  }
+  .right-top-split {
+    grid-template-columns: 1.32fr 1fr;
+    gap: 6px;
+  }
+  .loop-ring-layout {
+    grid-template-columns: 116px 1fr;
+    gap: 6px;
+  }
+  .loop-ring-svg {
+    width: 116px;
+    height: 108px;
+  }
+  .loop-summary-status {
+    font-size: 12px;
+    white-space: normal;
+    line-height: 1.2;
+  }
+  .loop-verify-summary {
+    font-size: 10px;
   }
   .bottom-strip {
-    grid-template-columns: 1.2fr 1fr 0.95fr 1.45fr;
+    grid-template-columns: 1.12fr 0.92fr 0.86fr 1.6fr;
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  .workflow-pod {
+    padding: 4px 8px;
+  }
+  .pod-title {
+    font-size: 9.5px;
+  }
+  .action-buttons {
+    gap: 4px;
+  }
+  .action-buttons .btn {
+    padding: 5px 7px;
+    font-size: 11px;
+  }
+  .pod-controls .btn {
+    padding: 5px 8px;
+    font-size: 11.5px;
+  }
+  .mode-btn {
+    padding: 5px 7px;
+    font-size: 11px;
   }
 }

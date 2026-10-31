@@ -78,6 +78,21 @@ def main() -> int:
             context = browser.new_context(viewport={"width": 1920, "height": 1080})
             page = context.new_page()
 
+            console_errors: list[str] = []
+            page.on(
+                "console",
+                lambda msg: console_errors.append(f"[{msg.type}] {msg.text}")
+                if msg.type == "error"
+                else None,
+            )
+            page.on("pageerror", lambda exc: console_errors.append(f"[pageerror] {exc}"))
+            page.on(
+                "response",
+                lambda res: console_errors.append(f"[http-{res.status}] {res.url}")
+                if res.status >= 400
+                else None,
+            )
+
             page.goto(base_url, wait_until="domcontentloaded")
             page.wait_for_selector("#limit-slider", timeout=10000)
             page.wait_for_timeout(500)
@@ -115,9 +130,23 @@ def main() -> int:
             page.wait_for_selector("#twin-halted-banner:not(.hidden)", timeout=10000)
             page.wait_for_timeout(400)
 
-            # 7. Save screenshot to towertwin/ui_check.png
+            # 7. Trigger Kill Switch and verify KILLED BY HUMAN banner/status
+            page.click("#btn-kill")
+            page.wait_for_selector("#twin-killed-banner:not(.hidden)", timeout=10000)
+            page.wait_for_timeout(300)
+
+            # 8. Save 1920x1080 screenshot to towertwin/ui_check.png
             page.screenshot(path=str(out_png), full_page=False)
-            print(f"Saved stage screenshot to {out_png}", flush=True)
+            print(f"Saved 1920x1080 screenshot to {out_png}", flush=True)
+
+            # 9. Also check 1366x768 viewport
+            out_png_1366 = _ROOT / "ui_check_1366x768.png"
+            page.set_viewport_size({"width": 1366, "height": 768})
+            page.wait_for_timeout(400)
+            page.screenshot(path=str(out_png_1366), full_page=False)
+            print(f"Saved 1366x768 screenshot to {out_png_1366}", flush=True)
+
+            print(f"Browser console errors ({len(console_errors)}): {console_errors}", flush=True)
 
             browser.close()
         return 0

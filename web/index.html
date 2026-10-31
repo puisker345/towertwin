@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TowerTwin · Digital Twin &amp; Formal Verification Loop</title>
-  <link rel="stylesheet" href="/static/style.css?v=3" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="/static/style.css?v=5" />
   <!-- Three.js from cdnjs.cloudflare.com per SPEC Section 10.4 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -139,7 +140,7 @@
           </div>
           <div class="spark-card" title="Rolling 100-tick inventory vs dashed red desk limit bounds">
             <div class="spark-header">
-              <span class="spark-title">INVENTORY vs LIMIT</span>
+              <span class="spark-title">INVENTORY</span>
               <span id="spark-pos-val" class="spark-val">0 / 100</span>
             </div>
             <canvas id="spark-pos-canvas" width="210" height="50"></canvas>
@@ -231,8 +232,8 @@
           <div class="heatmap-info">
             <div class="panel-title">5×5 PARAMETER SWEEP</div>
             <div id="heatmap-axes-label" class="heatmap-axes-label">
-              X: <code>skew_bps_per_lot</code><br />
-              Y: <code>vol_halt_threshold</code>
+              X: <code>half_spread_ticks</code><br />
+              Y: <code>skew_per_lot</code>
             </div>
             <div id="heatmap-status" class="heatmap-status">Awaiting sweep...</div>
             <div class="heatmap-legend">
@@ -242,7 +243,7 @@
             </div>
           </div>
           <div class="heatmap-canvas-wrap">
-            <canvas id="heatmap-canvas" width="96" height="84" title="Hover cells after sweep to inspect pass rate"></canvas>
+            <canvas id="heatmap-canvas" width="96" height="84" title="5×5 Parameter Sweep (half_spread_ticks × skew_per_lot)"></canvas>
           </div>
         </div>
       </div>
@@ -406,6 +407,6 @@
     </div>
   </div>
 
-  <script type="module" src="/static/app.js?v=3"></script>
+  <script type="module" src="/static/app.js?v=4"></script>
 </body>
 </html>
