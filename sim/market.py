@@ -273,6 +273,7 @@ def run_backtest(
 
     crash_start = fitted.start
     crash_end = fitted.start + fitted.duration
+    aftershock_end = crash_end + 35
     vol_end = crash_end + 200
     rec_end = crash_end + 300
 
@@ -299,9 +300,18 @@ def run_backtest(
             drift_step = int(round(drift_accum))
             drift_accum -= drift_step
 
-            vol_mult = fitted.sigma_mult if (crash_start <= t < vol_end) else 1.0
+            if crash_start <= t <= crash_end:
+                vol_mult = fitted.sigma_mult
+            elif crash_end < t < vol_end:
+                vol_mult = 1.0 + (fitted.sigma_mult - 1.0) * 0.25
+            else:
+                vol_mult = 1.0
             noise = int(round(float(rng.normal(0.0, sigma * vol_mult))))
-            mid = max(100, mid + drift_step + noise)
+            step = drift_step + noise
+            if crash_start <= t <= crash_end and abs(step) < 15:
+                whip_sign = int(direction) if ((t - crash_start) % 2 == 0) else -int(direction)
+                step = whip_sign * (15 + (abs(noise) % 4))
+            mid = max(100, mid + step)
 
             recent_mids.append(mid)
             if len(recent_mids) > 50:
@@ -326,8 +336,9 @@ def run_backtest(
 
             halted = valid_quote is None or (valid_quote.bid_size == 0 and valid_quote.ask_size == 0)
 
-            # 4. Draw market buy and sell orders
-            if crash_start <= t < crash_end:
+            # 4. Draw market buy and sell orders (including immediate post-crash trough liquidations)
+            in_stress_flow = crash_start <= t < aftershock_end
+            if in_stress_flow:
                 buy_rate = arrival_rate * fitted.buy_flow_mult
                 sell_rate = arrival_rate * fitted.sell_flow_mult
             else:
@@ -348,6 +359,7 @@ def run_backtest(
 
                 rem_bid = valid_quote.bid_size if (valid_quote and valid_quote.bid_price is not None) else 0
                 rem_ask = valid_quote.ask_size if (valid_quote and valid_quote.ask_price is not None) else 0
+                eff_fill_k = fill_k * 0.45 if in_stress_flow else fill_k
 
                 for idx in order_indices:
                     idx_int = int(idx)
@@ -364,7 +376,7 @@ def run_backtest(
                         # Market sell can fill against our bid
                         if valid_quote is not None and valid_quote.bid_price is not None and rem_bid > 0:
                             dist = abs(valid_quote.bid_price - mid) / float(tick_size)
-                            prob = min(1.0, math.exp(-fill_k * dist))
+                            prob = min(1.0, math.exp(-eff_fill_k * dist))
                             if float(rng.random()) < prob:
                                 fill_sz = min(order_sz, rem_bid)
                                 rem_bid -= fill_sz
@@ -400,7 +412,7 @@ def run_backtest(
                         # Market buy can fill against our ask
                         if valid_quote is not None and valid_quote.ask_price is not None and rem_ask > 0:
                             dist = abs(valid_quote.ask_price - mid) / float(tick_size)
-                            prob = min(1.0, math.exp(-fill_k * dist))
+                            prob = min(1.0, math.exp(-eff_fill_k * dist))
                             if float(rng.random()) < prob:
                                 fill_sz = min(order_sz, rem_ask)
                                 rem_ask -= fill_sz

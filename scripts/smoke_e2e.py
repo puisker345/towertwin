@@ -93,6 +93,13 @@ def run_smoke(use_real_llm: bool = False) -> int:
             # Step 3: Stream SSE until signoff_ready
             t0 = time.perf_counter()
             signoff_evt: dict[str, Any] | None = None
+            sweep_done_evt: dict[str, Any] | None = None
+            iter0_c2_detail: str = ""
+            winning_iter: int = 0
+            propose_t0: float | None = None
+            sweep_done_t0: float | None = None
+            argon_calls: list[str] = []
+            redteam_fallbacks: int = 0
             sweep_cells = 0
             redteam_cards = 0
             with client.stream("GET", "/api/events", timeout=140.0) as sse:
@@ -103,10 +110,31 @@ def run_smoke(use_real_llm: bool = False) -> int:
                         continue
                     payload = json.loads(line[5:].strip())
                     etype = payload.get("type")
-                    if etype == "redteam_scenario":
+                    if etype == "loop_stage" and payload.get("stage") == "propose":
+                        propose_t0 = time.perf_counter()
+                    elif etype == "iteration_proposed" and int(payload.get("iteration", 0)) >= 1:
+                        if propose_t0 is not None:
+                            argon_calls.append(f"iter_{payload.get('iteration')}={time.perf_counter() - propose_t0:.2f}s")
+                            propose_t0 = None
+                    elif etype == "checks" and int(payload.get("iteration", -1)) == 0:
+                        for c_item in payload.get("checks", []):
+                            if c_item.get("id") == "C2":
+                                iter0_c2_detail = str(c_item.get("detail", ""))
+                    elif etype == "loop_passed":
+                        winning_iter = int(payload.get("iteration", 0))
+                    elif etype == "redteam_scenario":
                         redteam_cards += 1
+                        if (payload.get("scenario") or {}).get("fallback"):
+                            redteam_fallbacks += 1
                     elif etype == "sweep_cell":
                         sweep_cells += 1
+                    elif etype == "sweep_done":
+                        sweep_done_evt = payload
+                        sweep_done_t0 = time.perf_counter()
+                    elif etype == "final_verification":
+                        if sweep_done_t0 is not None:
+                            argon_calls.append(f"review={time.perf_counter() - sweep_done_t0:.2f}s")
+                            sweep_done_t0 = None
                     elif etype == "signoff_ready":
                         signoff_evt = payload
                         break
@@ -123,6 +151,19 @@ def run_smoke(use_real_llm: bool = False) -> int:
                 el3,
                 f"id={artifact_id}, redteam={redteam_cards}, sweep={sweep_cells}",
             )
+            if ok3:
+                final_params = (signoff_evt or {}).get("params", {})
+                grid = (sweep_done_evt or {}).get("grid", [])
+                rates = [round(float(cell.get("pass_rate", 0.0)), 4) for row in grid for cell in row if cell]
+                n_ones = sum(1 for r in rates if r >= 0.9999)
+                best_cell = (sweep_done_evt or {}).get("best_cell", {})
+                print(f"    -> iter0 C2 breach : {iter0_c2_detail}", flush=True)
+                print(f"    -> repair iters    : {winning_iter} | Argon calls: {', '.join(argon_calls)} | redteam fallbacks: {redteam_fallbacks}/6", flush=True)
+                print(f"    -> final params    : {json.dumps(final_params)}", flush=True)
+                print(f"    -> sweep pass_rate : {n_ones}/{len(rates)} cells == 1.0 (min={min(rates) if rates else 0:.4f}, max={max(rates) if rates else 0:.4f}, chosen={best_cell})", flush=True)
+                for r_idx, row in enumerate(grid):
+                    row_str = " ".join(f"{float(c.get('pass_rate', 0.0)):.2f}" for c in row if c)
+                    print(f"       row {r_idx}: [{row_str}]", flush=True)
             if not ok3:
                 return 1
 

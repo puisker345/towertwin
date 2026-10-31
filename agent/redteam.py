@@ -14,21 +14,15 @@ from .prompts import RED_TEAM_ANGLES
 
 
 def build_axis_values(base_val: int | float) -> list[int | float]:
-    """Build 5 evenly-spaced values around `base_val` (±50% in even steps; integers stay integers)."""
-    multipliers = (0.5, 0.75, 1.0, 1.25, 1.5)
+    """Build 5 values around `base_val` over a wide stress range so boundary failure regions appear."""
     if isinstance(base_val, int) and not isinstance(base_val, bool):
-        raw = [max(1, int(round(base_val * m))) for m in multipliers]
-        # Ensure 5 distinct integer values centred on base_val when base_val is small
-        if len(set(raw)) < 5:
-            center = max(3, int(base_val))
-            return [center - 2, center - 1, center, center + 1, center + 2]
-        # Ensure exact base_val is at index 2
-        raw[2] = int(base_val)
-        return raw
+        b = max(1, int(base_val))
+        return [0, max(1, b - 1), b, b + 2, b + 7]
 
     fval = float(base_val)
     if abs(fval) < 1e-6:
-        return [0.02, 0.05, 0.1, 0.15, 0.2]
+        return [0.005, 0.05, 0.12, 0.20, 0.36]
+    multipliers = (0.1, 0.5, 1.0, 1.5, 3.0)
     vals = [round(fval * m, 4) for m in multipliers]
     vals[2] = round(fval, 4)
     return vals

@@ -34,13 +34,13 @@ SCENARIO_SCHEMA_AND_BOUNDS = """
 {
   "name": "string (short title)",
   "description": "string (one-sentence risk description)",
-  "start": "int in [200, 2600] (tick when crash begins)",
-  "depth_pct": "float in [1.0, 20.0] (total % drop, or negative up to -12.0 for spike-up squeeze)",
-  "duration": "int in [5, 100] (ticks of the crash phase)",
+  "start": "int in [500, 2800] (tick when crash begins)",
+  "depth_pct": "float in [1.0, 15.0] (total % move magnitude; always positive)",
+  "duration": "int in [5, 120] (ticks of the crash phase)",
   "sigma_mult": "float in [1.0, 10.0] (volatility multiplier during crash)",
-  "sell_flow_mult": "float in [0.1, 10.0] (sell order arrival multiplier)",
-  "buy_flow_mult": "float in [0.1, 10.0] (buy order arrival multiplier)",
-  "recovery_pct": "float in [0.0, 100.0] (% of drop recovered over 200 ticks)"
+  "sell_flow_mult": "float in [0.1, 6.0] (sell order arrival multiplier)",
+  "buy_flow_mult": "float in [0.1, 6.0] (buy order arrival multiplier; set > sell_flow_mult for spike-up squeeze)",
+  "recovery_pct": "float in [0.0, 100.0] (% of move recovered over 300 ticks)"
 }
 """.strip()
 
@@ -67,6 +67,7 @@ Current strategy:
 ```
 Repair the strategy so every check passes under the new rules. Make the smallest change that
 fixes the root cause, and prefer deriving limits from `limits` over hard-coded numbers.
+Keep a safety buffer of at least max_order_size below position_limit rather than setting inventory caps equal to hard limits, and never quote a size that could take |position| past (position_limit - max_order_size).
 Keep the contract exactly:
 {STRATEGY_CONTRACT}
 Use only past data in MarketState. Keep PARAMS and SWEEP_PARAMS meaningful for a robustness sweep.
